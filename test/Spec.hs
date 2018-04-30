@@ -50,7 +50,10 @@ spec s = with (return (app empty (nt s))) $ do
     it "updates mutable fields" $ do
       put "/Users/0" barbUpdate0 `shouldRespondWith` updatedBarb0
 
-    it "does not create new user " $ do
+    it "unsets null fields" $ do
+      put "/Users/0" barbUpdate1 `shouldRespondWith` updatedBarb1
+
+    it "does not create new user" $ do
       put "/Users/nonexisting" newBarbara `shouldRespondWith` 400
 
   describe "DELETE /Users/:id" $ do
@@ -158,6 +161,49 @@ updatedBarb0 = [json|
             "givenName":"Barbara",
             "middleName":"Jane"
           },
+          "emails":[
+            {
+              "value":"bjensen@example.com"
+            },
+            {
+              "value":"babs@jensen.org"
+            }
+          ],
+          "meta":{
+            "resourceType":"User",
+            "location":"todo",
+            "created":"2018-01-01T00:00:00Z",
+            "version":"W/\"testVersion\"",
+            "lastModified":"2018-01-01T00:00:00Z"
+          }
+        }|]
+
+-- explicitly set `name` value to `null` to unset it
+barbUpdate1 :: ByteString
+barbUpdate1 = [json|
+        { "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
+          "id":"0",
+          "userName":"bjensen",
+          "externalId":"bjensen",
+          "name": null,
+          "roles":[],
+          "emails":[
+            {
+              "value":"bjensen@example.com"
+            },
+            {
+              "value":"babs@jensen.org"
+            }
+          ]
+        }|]
+
+-- name should be removed after application of barbUpdate1
+updatedBarb1 :: ResponseMatcher
+updatedBarb1 = [json|
+        { "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
+          "id":"0",
+          "userName":"bjensen",
+          "externalId":"bjensen",
           "emails":[
             {
               "value":"bjensen@example.com"

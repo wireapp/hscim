@@ -18,6 +18,7 @@ default-extensions:
   - FlexibleInstances
   - TypeSynonymInstances
   - DeriveGeneric
+  - GeneralizedNewtypeDeriving
 
 extra-source-files:
   - README.md

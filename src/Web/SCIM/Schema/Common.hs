@@ -1,13 +1,13 @@
-
 module Web.SCIM.Schema.Common where
 
+import Control.Applicative
 import Data.Text hiding (dropWhile)
 import Data.Aeson
 import qualified Data.Char as Char
 import qualified Data.HashMap.Strict as HM
 import Data.String (IsString)
 import qualified Network.URI as Network
-
+import GHC.Generics (Generic)
 
 
 newtype URI = URI { unURI :: Network.URI }
@@ -16,7 +16,7 @@ newtype URI = URI { unURI :: Network.URI }
 instance FromJSON URI where
   parseJSON = withText "URI" $ \uri -> case Network.parseURI (unpack uri) of
     Nothing -> fail "Invalid URI"
-    Just some -> pure $ URI some
+    Just som -> pure $ URI som
 
 instance ToJSON URI where
   toJSON (URI uri) = String $ pack $ show uri
@@ -48,27 +48,8 @@ parseOptions = defaultOptions
   { fieldLabelModifier = fmap Char.toLower
   }
 
-data Unsettable a = Unset | Omitted | Some a
-  deriving (Show, Eq)
+newtype Unsettable a = Maybe (Maybe a)
+  deriving (Show, Eq, Generic, Functor, Applicative, Alternative)
 
-instance Functor Unsettable where
-  fmap f (Some a) = Some $ f a
-  fmap _ Unset = Unset
-  fmap _ Omitted = Omitted 
-
-instance (FromJSON a) => FromJSON (Unsettable a) where
-  parseJSON Null = pure Unset
-  parseJSON v = do
-    res <- parseJSON v
-    case res of
-      Nothing -> pure Omitted
-      Just some -> pure $ Some some
-
-toMaybe :: Unsettable a -> Maybe a
-toMaybe Unset = Nothing
-toMaybe Omitted = Nothing
-toMaybe (Some a) = Just a
-
-instance (ToJSON a) => ToJSON (Unsettable a) where
-  toJSON Unset = Null
-  toJSON v     = toJSON . toMaybe $ v
+instance (ToJSON a) => ToJSON (Unsettable a)
+instance (FromJSON a) => FromJSON (Unsettable a)

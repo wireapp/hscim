@@ -23,7 +23,7 @@ data User = User
   { schemas :: [Schema]
   , userName :: Text
   , externalId :: Maybe Text
-  , name :: Maybe Name
+  , name :: Maybe (Maybe Name)
   , displayName :: Maybe Text
   , nickName :: Maybe Text
   , profileUrl :: Maybe URI
