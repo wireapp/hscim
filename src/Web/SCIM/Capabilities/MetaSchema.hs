@@ -3,15 +3,23 @@
 {-# LANGUAGE TypeOperators   #-}
 {-# LANGUAGE ConstraintKinds   #-}
 
+{-|
+Module:      Web.SCIM.Capabilities.MetaSchema
+Description: endpoints for querying supported SCIM features
+
+This module implements the config endpoints, which let SCIM clients
+query the server for supported features, see 'Web.SCIM.Server.app' for
+examples of usage.
+
+-}
+
 module Web.SCIM.Capabilities.MetaSchema (
   ConfigAPI
   , configServer
-  , Supported (..)
   , BulkConfig (..)
   , FilterConfig (..)
   , AuthenticationScheme (..)
   , Configuration (..)
-  , empty
   ) where
 
 import           Web.SCIM.Capabilities.MetaSchema.User
@@ -19,76 +27,112 @@ import           Web.SCIM.Capabilities.MetaSchema.SPConfig
 import           Web.SCIM.Capabilities.MetaSchema.Group
 import           Web.SCIM.Capabilities.MetaSchema.Schema
 import           Web.SCIM.Capabilities.MetaSchema.ResourceType
+import           Web.SCIM.Schema.Common (URI)
 import           Control.Monad.Except
 import           Control.Error.Util (note)
 import           Data.Aeson
-import qualified Data.HashMap.Lazy as HML
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
-import           Servant
+import           Servant hiding (URI)
 import           Servant.Generic
 
 import           Prelude hiding (filter)
 
-data Supported a = Supported
-  { supported :: Bool
-  , subConfig :: a
-  } deriving (Show, Eq, Generic)
-
-instance ToJSON a => ToJSON (Supported a) where
-  toJSON (Supported b v) = case toJSON v of
-    (Object o) -> Object $ HML.insert "supported" (Bool b) o
-    _          -> Object $ HML.fromList [("supported", Bool b)]
-
-
+{-| Configuration of bulk requests, as described in
+    https://tools.ietf.org/html/rfc7644#section-3.7 -}
 data BulkConfig = BulkConfig
-  { maxOperations :: Int
+  { bulkSupported :: Bool
+  , maxOperations :: Int
   , maxPayloadSize :: Int
-  } deriving (Show, Eq, Generic)
+  } deriving (Show, Eq)
 
-instance ToJSON BulkConfig
+instance ToJSON BulkConfig where
+  toJSON (BulkConfig supported maxOps maxSize) =
+    object [ "supported" .= supported
+           , "maxOperations" .= maxOps
+           , "maxPayloadSize" .= maxSize
+           ]
 
+{-| Configuration of query filtering, as described in
+    https://tools.ietf.org/html/rfc7644#section-3.4.2.2 -}
 data FilterConfig = FilterConfig
-  { maxResults :: Int
-  } deriving (Show, Eq, Generic)
+  { filterSupported :: Bool
+  , maxResults :: Int
+  } deriving (Show, Eq)
 
-instance ToJSON FilterConfig
+instance ToJSON FilterConfig where
+  toJSON (FilterConfig supported maxRes) =
+    object [ "supported" .= supported
+           , "maxResults" .= maxRes
+           ]
 
--- TODO
+{-| Configuration of supported authentication schemes. As an example,
+  OAuth Bearer Tokens can be described as:
+
+  @ AuthenticationScheme
+  { authType = "oauthbearertoken"
+  , name = "OAuth Bearer Token"
+  , description = "Authentication scheme using the OAuth Bearer Token Standard"
+  , specUri = "http://www.rfc-editor.org/info/rfc6750"
+  , primary = True
+  }
+  @
+-}
 data AuthenticationScheme = AuthenticationScheme
-  { typ :: Text
+  { authType :: Text
   , name :: Text
   , description :: Text
-  , specUri :: Text -- TODO: URI
-  -- , documentationUri :: URI
-  } deriving (Show, Eq, Generic)
+  , specUri :: URI
+  , documentation :: URI
+  , primary :: Bool
+  } deriving (Show, Eq)
 
-instance ToJSON AuthenticationScheme
+instance ToJSON AuthenticationScheme where
+  toJSON (AuthenticationScheme typ' name' desc spec doc pri) =
+    object [ "type" .= typ'
+           , "name" .= name'
+           , "description" .= desc
+           , "specification" .= spec
+           , "documentationUri" .= doc
+           , "primary" .= pri
+           ]
 
+{-| The server configuration. This will be served at the @/ServiceProviderConfig@
+  endpoint, as described in https://tools.ietf.org/html/rfc7644#section-4 and
+  https://tools.ietf.org/html/rfc7643#section-5.
+-}
 data Configuration = Configuration
-  { documentationUri :: Maybe Text -- TODO: URI
-  , patch :: Supported ()
-  , bulk :: Supported BulkConfig
-  , filter :: Supported FilterConfig
-  , changePassword :: Supported ()
-  , sort :: Supported ()
-  , etag :: Supported ()
+  { documentationUri :: Maybe URI
+    {-^ URL pointing to the service provider's human-consumable help
+         documentation -}
+  , patch :: Bool
+  -- ^ server supports HTTP PATCH
+  , bulk :: BulkConfig
+  , filter :: FilterConfig
+  , changePassword :: Bool
+  -- ^ clients are allowed to change passwords
+  , sort :: Bool
+  -- ^ server supports sorting
+  , etag :: Bool
+  -- ^ server supports HTTP Etag
   , authenticationSchemes :: [AuthenticationScheme]
-  } deriving (Show, Eq, Generic)
+  -- ^ supported authentication schemes
+  } deriving (Show, Eq)
 
-instance ToJSON Configuration
+mkSupported :: Bool -> Value
+mkSupported b = object [ "supported" .= b ]
 
-empty :: Configuration
-empty = Configuration
-  { documentationUri = Nothing
-  , patch = Supported False ()
-  , bulk = Supported False $ BulkConfig 0 0
-  , filter = Supported False $ FilterConfig 0
-  , changePassword = Supported False ()
-  , sort = Supported False ()
-  , etag = Supported False ()
-  , authenticationSchemes = []
-  }  
+instance ToJSON Configuration where
+  toJSON (Configuration uri patch' bulk' filter' pw sort' etag' schemes) =
+    object [ "documentationUri" .= uri
+           , "patch" .= mkSupported patch'
+           , "bulk" .= toJSON bulk'
+           , "filter" .= toJSON filter'
+           , "changePassword" .= mkSupported pw
+           , "sort" .= mkSupported sort'
+           , "etag" .= mkSupported etag'
+           , "authenticationSchemes" .= (toJSON <$> schemes)
+           ]
 
 configServer :: MonadError ServantErr m =>
                 Configuration -> ConfigAPI (AsServerT m)

@@ -4,15 +4,28 @@ module Main (main, startApp) where
 
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Logger
-import           Web.SCIM.Capabilities.MetaSchema (empty)
+import           Web.SCIM.Capabilities.MetaSchema
 import qualified Test.Class.Groups as Groups
 import           Web.SCIM.Server
 import qualified STMContainers.Map   as Map
 import           Test.Hspec
 import           Test.Hspec.Wai      hiding (post, put, patch)
 import           Test.Hspec.Wai.JSON
-import           Mock
+import           Mock hiding (patch)
 import           Data.ByteString.Lazy (ByteString)
+import           Prelude hiding (filter)
+
+empty :: Configuration
+empty = Configuration
+  { documentationUri = Nothing
+  , patch = False
+  , bulk = BulkConfig False 0 0
+  , filter = FilterConfig False 0
+  , changePassword = False
+  , sort = False
+  , etag = False
+  , authenticationSchemes = []
+  }  
 
 main :: IO ()
 main = do

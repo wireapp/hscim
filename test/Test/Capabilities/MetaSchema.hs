@@ -17,6 +17,20 @@ import qualified Test.Hspec.Expectations as Expect
 import           Test.Hspec.Wai      hiding (post, put, patch)
 import           Test.Hspec.Wai.JSON
 
+import           Prelude hiding (filter)
+
+empty :: Configuration
+empty = Configuration
+  { documentationUri = Nothing
+  , patch = False
+  , bulk = BulkConfig False 0 0
+  , filter = FilterConfig False 0
+  , changePassword = False
+  , sort = False
+  , etag = False
+  , authenticationSchemes = []
+  }  
+
 server :: Proxy (ToServant (ConfigAPI AsApi))
 server = Proxy
 
