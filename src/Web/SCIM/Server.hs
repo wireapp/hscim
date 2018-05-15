@@ -4,8 +4,9 @@
 {-# LANGUAGE ConstraintKinds   #-}
 
 module Web.SCIM.Server
-  ( app
+  ( hoistSCIM
   , SiteAPI
+  , SCIMHandler
   ) where
 
 import           Web.SCIM.Class.Group (GroupSite (..), GroupDB, groupServer)
@@ -95,15 +96,38 @@ deleteUser' uid = do
 api :: Proxy SiteAPI
 api = Proxy
 
-app :: SCIMHandler m => Configuration -> (forall a. m a -> Handler a) -> Application
-app c t = serve (Proxy :: Proxy SiteAPI) $ hoistServer api t (toServant $ superServer c)
+{-| Similar to Servant's 'Servant.Server.hoistServer' this lets you use
+  a different transformer stack than Servant's, providing a
+  transformation into the Servant stack. 
+
+  The transformation is usually simple, as the Servant stack is simply
+  'IO' with 'MonadError'. For example, with `ReaderT` you simply run
+  it:
+
+  @
+  type MyStack = ReaderT Env Handler
+
+  instance SCIMHandler MyStack where
+    -- TODO: implement
+
+  transformation :: r -> ReaderT r m a -> m a
+  transformation = flip runReaderT
+
+  app :: Application
+  app = hoistSCIM (env :: Env) transformation
+  @
+
+  See 'Mock' for an example of this usage.
+-}
+hoistSCIM :: SCIMHandler m => Configuration -> (forall a. m a -> Handler a) -> Application
+hoistSCIM c t = serve (Proxy :: Proxy SiteAPI) $ hoistServer api t (toServant $ superServer c)
 
 
 -- TODO: move to User.hs
 overwriteWith :: User -> User -> User
 overwriteWith old new = old
-  { --externalId :: Unsettable Text
-    name = merge name
+  { externalId = merge externalId
+  , name = merge name
   , displayName = merge displayName
   , nickName = merge nickName
   , profileUrl = merge profileUrl

@@ -32,17 +32,17 @@ main = do
   emptyState <- TestStorage <$> Map.newIO <*> Map.newIO
   hspec $ describe "/Users" (spec emptyState)
   hspec $ describe "/Groups" (Groups.spec emptyState)
---  hspec $ describe "Configuration" (Config.spec emptyState)
+  -- hspec $ describe "Configuration" (Config.spec emptyState)
 
 startApp :: Int -> IO ()
 startApp port = do
   emptyState <- TestStorage <$> Map.newIO <*> Map.newIO
   withStdoutLogger $ \aplogger -> do
     let settings = setPort port $ setLogger aplogger defaultSettings
-    runSettings settings $ app empty $ nt emptyState
+    runSettings settings $ hoistSCIM empty $ nt emptyState
 
 spec :: TestStorage -> Spec
-spec s = with (return (app empty (nt s))) $ do
+spec s = with (return (hoistSCIM empty (nt s))) $ do
   describe "GET & POST /Users" $ do
     it "responds with [] in empty environment" $ do
       get "/Users" `shouldRespondWith` emptyList

@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DataKinds       #-}
 {-# LANGUAGE TypeOperators   #-}

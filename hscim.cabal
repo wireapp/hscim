@@ -2,12 +2,11 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dc1932caffb392518c0e562028651945fcd42f26adb9a937183985b3be892077
+-- hash: 33337edac1bd4e6c40fa0de28512ecc26a46400d46752168d62af90ef54d71d4
 
 name:           hscim
 version:        0.1.0.0
-synopsis:       ...
-description:    ...
+synopsis:       SCIM (RFC 7644) client and server
 category:       Web
 homepage:       https://github.com/wireapp/hscim/README.md
 bug-reports:    https://github.com/wireapp/hscim/issues

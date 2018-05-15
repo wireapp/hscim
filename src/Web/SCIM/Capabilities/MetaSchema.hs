@@ -119,9 +119,6 @@ data Configuration = Configuration
   -- ^ supported authentication schemes
   } deriving (Show, Eq)
 
-mkSupported :: Bool -> Value
-mkSupported b = object [ "supported" .= b ]
-
 instance ToJSON Configuration where
   toJSON (Configuration uri patch' bulk' filter' pw sort' etag' schemes) =
     object [ "documentationUri" .= uri
@@ -134,6 +131,12 @@ instance ToJSON Configuration where
            , "authenticationSchemes" .= (toJSON <$> schemes)
            ]
 
+mkSupported :: Bool -> Value
+mkSupported b = object [ "supported" .= b ]
+
+{-| A servant server for the configuration endpoints described in
+  https://tools.ietf.org/html/rfc7644#section-4.
+-}
 configServer :: MonadError ServantErr m =>
                 Configuration -> ConfigAPI (AsServerT m)
 configServer config = ConfigAPI
