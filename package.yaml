@@ -26,6 +26,7 @@ dependencies:
   - aeson
   - aeson-qq
   - mtl
+  - servant-client
   - servant-server
   - servant-generic
   - text

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 33337edac1bd4e6c40fa0de28512ecc26a46400d46752168d62af90ef54d71d4
+-- hash: 3db3c56422d8cad0112a4d51261ef85d2064e913b31ab307aadbf2ee13804826
 
 name:           hscim
 version:        0.1.0.0
@@ -38,6 +38,7 @@ library
     , errors
     , mtl
     , network-uri
+    , servant-client
     , servant-generic
     , servant-server
     , text
@@ -53,6 +54,7 @@ library
       Web.SCIM.Capabilities.MetaSchema.User
       Web.SCIM.Class.Group
       Web.SCIM.Class.User
+      Web.SCIM.Client
       Web.SCIM.Schema.Common
       Web.SCIM.Schema.Error
       Web.SCIM.Schema.ListResponse
@@ -95,6 +97,7 @@ test-suite spec
     , list-t
     , mtl
     , network-uri
+    , servant-client
     , servant-generic
     , servant-server
     , stm
@@ -119,6 +122,7 @@ test-suite spec
       Web.SCIM.Capabilities.MetaSchema.User
       Web.SCIM.Class.Group
       Web.SCIM.Class.User
+      Web.SCIM.Client
       Web.SCIM.Schema.Common
       Web.SCIM.Schema.Error
       Web.SCIM.Schema.ListResponse

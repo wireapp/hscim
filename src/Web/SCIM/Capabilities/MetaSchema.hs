@@ -53,6 +53,9 @@ instance ToJSON BulkConfig where
            , "maxPayloadSize" .= maxSize
            ]
 
+instance FromJSON BulkConfig where
+  parseJSON = undefined
+
 {-| Configuration of query filtering, as described in
     https://tools.ietf.org/html/rfc7644#section-3.4.2.2 -}
 data FilterConfig = FilterConfig
@@ -65,6 +68,9 @@ instance ToJSON FilterConfig where
     object [ "supported" .= supported
            , "maxResults" .= maxRes
            ]
+
+instance FromJSON FilterConfig where
+  parseJSON = undefined
 
 {-| Configuration of supported authentication schemes. As an example,
   OAuth Bearer Tokens can be described as:
@@ -96,6 +102,9 @@ instance ToJSON AuthenticationScheme where
            , "documentationUri" .= doc
            , "primary" .= pri
            ]
+
+instance FromJSON AuthenticationScheme where
+  parseJSON = undefined
 
 {-| The server configuration. This will be served at the @/ServiceProviderConfig@
   endpoint, as described in https://tools.ietf.org/html/rfc7644#section-4 and
@@ -130,6 +139,9 @@ instance ToJSON Configuration where
            , "etag" .= mkSupported etag'
            , "authenticationSchemes" .= (toJSON <$> schemes)
            ]
+
+instance FromJSON Configuration where
+  parseJSON = undefined
 
 mkSupported :: Bool -> Value
 mkSupported b = object [ "supported" .= b ]
