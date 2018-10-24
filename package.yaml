@@ -63,6 +63,9 @@ dependencies:
   - microlens
   - http-api-data
   - mmorph
+  - QuickCheck
+  - hedgehog
+  - hedgehog-quickcheck
 
 ghc-options: -Wall
 
@@ -111,3 +114,6 @@ tests:
       - base64-bytestring
       - hedgehog
       - hw-hspec-hedgehog
+      - servant-swagger == 1.1.4.*
+      - QuickCheck
+      - swagger2
