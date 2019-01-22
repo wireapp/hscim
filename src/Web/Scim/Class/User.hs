@@ -5,7 +5,6 @@ module Web.Scim.Class.User
     , userServer
     ) where
 
-import           Control.Applicative ((<|>), Alternative)
 import           Control.Monad
 import           Data.Text
 import           GHC.Generics (Generic)
