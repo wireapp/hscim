@@ -8,7 +8,7 @@ module Web.Scim.Class.User
 import           Control.Monad
 import           Data.Text
 import           GHC.Generics (Generic)
-import           Web.Scim.Schema.User hiding (schemas)
+import           Web.Scim.Schema.User
 import           Web.Scim.Schema.Meta
 import           Web.Scim.Schema.Common
 import           Web.Scim.Schema.Error
@@ -113,6 +113,8 @@ postUser' auth user = do
 -- FUTUREWORK: according to the spec, we should handle cases where someone
 -- attempts to overwrite @readOnly@ and @immutable@ attributes. Currently we
 -- don't have any such attributes.
+--
+-- See <https://github.com/wireapp/hscim/issues/21>.
 putUser'
     :: UserDB m
     => AuthInfo m -> UserId -> User -> ScimHandler m StoredUser
