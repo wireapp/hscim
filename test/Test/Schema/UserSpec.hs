@@ -24,10 +24,16 @@ spec = do
     it "handles all fields" $ do
       toJSON completeUser `shouldBe` completeUserJson
       eitherDecode (encode completeUserJson) `shouldBe` Right completeUser
-    it "has defaults for all optional and multi-valued fields" $
-      pending
+
+    it "has defaults for all optional and multi-valued fields" $ do
+      toJSON minimalUser `shouldBe` minimalUserJson
+      eitherDecode (encode minimalUserJson) `shouldBe` Right minimalUser
+
+    it "treats 'null' and '[]' as absence of fields" $
+      eitherDecode (encode minimalUserJsonRedundant) `shouldBe` Right minimalUser
+
     it "allows casing variations in field names" $
-      pending
+      eitherDecode (encode minimalUserJsonNonCanonical) `shouldBe` Right minimalUser
 
 -- | A 'User' with all attributes present.
 completeUser :: User
@@ -87,7 +93,7 @@ completeUser = User
       ]
   }
 
--- | A reference encoding of 'completeUser'.
+-- | Reference encoding of 'completeUser'.
 completeUserJson :: Value
 completeUserJson = [scim|
 {
@@ -151,5 +157,56 @@ completeUserJson = [scim|
   "title": "sample title",
   "externalId": "sample externalId",
   "userType": "sample userType"
+}
+|]
+
+-- | A 'User' with all attributes empty (if possible).
+minimalUser :: User
+minimalUser = empty { userName = "sample userName" }
+
+-- | Reference encoding of 'minimalUser'.
+minimalUserJson :: Value
+minimalUserJson = [scim|
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:User"
+  ],
+  "userName": "sample userName"
+}
+|]
+
+-- | An encoding of 'minimalUser' with redundant @null@s and @[]@s for missing
+-- fields.
+minimalUserJsonRedundant :: Value
+minimalUserJsonRedundant = [scim|
+{
+  "roles": [],
+  "x509Certificates": [],
+  "locale": null,
+  "addresses": [],
+  "userName": "sample userName",
+  "phoneNumbers": [],
+  "active": null,
+  "photos": [],
+  "name": null,
+  "password": null,
+  "emails": [],
+  "ims": [],
+  "preferredLanguage": null,
+  "entitlements": [],
+  "displayName": null,
+  "nickName": null,
+  "profileUrl": null,
+  "title": null,
+  "externalId": null,
+  "userType": null
+}
+|]
+
+-- | An encoding of 'minimalUser' with non-canonical field name casing.
+minimalUserJsonNonCanonical :: Value
+minimalUserJsonNonCanonical = [scim|
+{
+  "USERname": "sample userName"
 }
 |]
