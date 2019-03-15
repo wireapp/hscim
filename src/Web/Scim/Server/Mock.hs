@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- | A mock server for use in our testsuite, as well as for automated
@@ -12,12 +14,15 @@ import           Web.Scim.Class.Auth
 import           Control.Monad.STM (STM, atomically)
 import           Control.Monad.Reader
 import           Control.Monad.Morph
+import           Data.Aeson
+import           Data.Hashable
 import           Data.Text (Text, pack)
 import           Data.Time.Clock
 import           Data.Time.Calendar
 import           GHC.Exts (sortWith)
 import           ListT
 import qualified STMContainers.Map as STMMap
+import           Text.Read (readMaybe)
 import           Web.Scim.Schema.User
 import           Web.Scim.Schema.Error
 import           Web.Scim.Schema.Meta
@@ -33,7 +38,13 @@ import           Servant
 data Mock
 
 -- | A simple ID type.
-type Id = Int
+newtype Id = Id { unId :: Int }
+  deriving (Eq, Show, Ord, Hashable, ToHttpApiData, FromHttpApiData)
+
+instance ToJSON Id where
+  toJSON = toJSON . show . unId
+instance FromJSON Id where
+  parseJSON = maybe (fail "not a number") (pure . Id) . readMaybe <=< parseJSON
 
 type UserStorage  = STMMap.Map Id (StoredUser Mock)
 type GroupStorage = STMMap.Map Id (StoredGroup Mock)
@@ -132,7 +143,7 @@ insertUser
   -> ScimHandler STM (StoredUser Mock)
 insertUser user met storage = do
   size <- lift $ STMMap.size storage
-  let uid = size
+  let uid = Id size
       newUser = WithMeta met $ WithId uid user
   lift $ STMMap.insert newUser uid storage
   return newUser
@@ -166,7 +177,7 @@ instance GroupDB Mock TestServer where
 insertGroup :: Group -> Meta -> GroupStorage -> ScimHandler STM (StoredGroup Mock)
 insertGroup grp met storage = do
   size <- lift $ STMMap.size storage
-  let gid = size
+  let gid = Id size
       newGroup = WithMeta met $ WithId gid grp
   lift $ STMMap.insert newGroup gid storage
   return newGroup
