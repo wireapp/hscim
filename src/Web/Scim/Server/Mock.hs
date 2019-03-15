@@ -29,8 +29,14 @@ import           Web.Scim.Filter
 import           Web.Scim.Handler
 import           Servant
 
-type UserStorage  = STMMap.Map Text (StoredUser NoUserExtra)
-type GroupStorage = STMMap.Map Text StoredGroup
+-- | Tag used in the mock server.
+data Mock
+
+-- | A simple ID type.
+type Id = Int
+
+type UserStorage  = STMMap.Map Id (StoredUser Mock)
+type GroupStorage = STMMap.Map Id (StoredGroup Mock)
 
 data TestStorage = TestStorage
   { userDB :: UserStorage
@@ -50,15 +56,15 @@ liftSTM = liftIO . atomically
 hoistSTM :: (MFunctor t, MonadIO m) => t STM a -> t m a
 hoistSTM = hoist liftSTM
 
-instance UserDB TestServer where
-  type UserExtra TestServer = NoUserExtra
-  list () mbFilter = do
-    -- Note: in production instances it would make sense to remove this code
-    -- and let the implementor of the 'UserDB' instance do filtering (e.g.
-    -- doing case-insensitive queries on common attributes can be done
-    -- faster if the underlying database has indices). However, it might
-    -- still be useful to provide a default implementation in @hscim@ and
-    -- let users of the library decide whether they want to use it or not.
+----------------------------------------------------------------------------
+-- UserDB
+
+instance UserTypes Mock where
+  type UserId Mock = Id
+  type UserExtra Mock = NoUserExtra
+
+instance UserDB Mock TestServer where
+  getUsers () mbFilter = do
     m <- userDB <$> ask
     users <- liftSTM $ ListT.toList $ STMMap.stream m
     let check user = case mbFilter of
@@ -70,23 +76,74 @@ instance UserDB TestServer where
               Left err  -> throwScim (badRequest InvalidFilter (Just err))
     fromList . sortWith (Common.id . thing) <$>
       filterM check (snd <$> users)
-  get () i = do
+  getUser () uid = do
     m <- userDB <$> ask
-    liftSTM $ STMMap.lookup i m
-  create auth user = do
+    liftSTM (STMMap.lookup uid m) >>= \case
+      Nothing -> throwScim (notFound "User" (pack (show uid)))
+      Just x  -> pure x
+  postUser () user = do
     m <- userDB <$> ask
-    met <- getMeta auth
+    let met = createMeta UserResource
     newUser <- hoistSTM $ insertUser user met m
     return newUser
-  update () uid user = do
+  patchUser _ _ _ =
+    throwScim (serverError "PATCH /Users not implemented")
+  putUser () uid user = do
     storage <- userDB <$> ask
     hoistSTM $ updateUser uid user storage
-  delete () uid = do
+  deleteUser () uid = do
     m <- userDB <$> ask
     hoistSTM $ delUser uid m
-  getMeta () = return (createMeta UserResource)
 
-instance GroupDB TestServer where
+updateUser
+  :: Id
+  -> User Mock
+  -> UserStorage
+  -> ScimHandler STM (StoredUser Mock)
+updateUser uid user storage = do
+  existing <- lift $ STMMap.lookup uid storage
+  case existing of
+    Nothing -> throwScim (notFound "User" (pack (show uid)))
+    Just stored -> do
+      let newMeta = meta stored
+          newUser = WithMeta newMeta $ WithId uid user
+      lift $ STMMap.insert newUser uid storage
+      pure newUser
+
+-- (there seems to be no readOnly fields in User)
+assertMutability :: User Mock -> StoredUser Mock -> Bool
+assertMutability _newUser _stored = True
+
+delUser
+  :: Id
+  -> UserStorage
+  -> ScimHandler STM ()
+delUser uid storage = do
+  u <- lift $ STMMap.lookup uid storage
+  case u of
+    Nothing -> throwScim (notFound "User" (pack (show uid)))
+    Just _ -> lift $ STMMap.delete uid storage
+
+-- insert with a simple incrementing integer id (good for testing)
+insertUser
+  :: User Mock
+  -> Meta
+  -> UserStorage
+  -> ScimHandler STM (StoredUser Mock)
+insertUser user met storage = do
+  size <- lift $ STMMap.size storage
+  let uid = size
+      newUser = WithMeta met $ WithId uid user
+  lift $ STMMap.insert newUser uid storage
+  return newUser
+
+----------------------------------------------------------------------------
+-- GroupDB
+
+instance GroupTypes Mock where
+  type GroupId Mock = Id
+
+instance GroupDB Mock TestServer where
   list () = do
     m <- groupDB <$> ask
     groups <- liftSTM $ ListT.toList $ STMMap.stream m
@@ -94,9 +151,9 @@ instance GroupDB TestServer where
   get () i = do
     m <- groupDB <$> ask
     liftSTM $ STMMap.lookup i m
-  create auth grp = do
+  create () grp = do
     storage <- groupDB <$> ask
-    met <- getGroupMeta auth
+    let met = createMeta GroupResource
     newGroup <- hoistSTM $ insertGroup grp met storage
     pure newGroup
   update () i g = do
@@ -105,66 +162,47 @@ instance GroupDB TestServer where
   delete () gid = do
     m <- groupDB <$> ask
     hoistSTM $ delGroup gid m
-  getGroupMeta () = return (createMeta GroupResource)
 
-instance AuthDB TestServer where
-  type AuthData TestServer = Text
-  type AuthInfo TestServer = ()
-  authCheck = \case
-      Just "authorized" -> pure ()
-      _ -> throwScim (unauthorized "expected 'authorized'")
-
-insertGroup :: Group -> Meta -> GroupStorage -> ScimHandler STM StoredGroup
+insertGroup :: Group -> Meta -> GroupStorage -> ScimHandler STM (StoredGroup Mock)
 insertGroup grp met storage = do
   size <- lift $ STMMap.size storage
-  let gid = pack . show $ size
+  let gid = size
       newGroup = WithMeta met $ WithId gid grp
   lift $ STMMap.insert newGroup gid storage
   return newGroup
 
-updateGroup :: GroupId -> Group -> GroupStorage -> ScimHandler STM StoredGroup
+updateGroup :: Id -> Group -> GroupStorage -> ScimHandler STM (StoredGroup Mock)
 updateGroup gid grp storage = do
   existing <- lift $ STMMap.lookup gid storage
   case existing of
-    Nothing -> throwScim (notFound "Group" gid)
+    Nothing -> throwScim (notFound "Group" (pack (show gid)))
     Just stored -> do
       let newMeta = meta stored
           newGroup = WithMeta newMeta $ WithId gid grp
       lift $ STMMap.insert newGroup gid storage
       pure newGroup
 
-updateUser
-  :: UserId
-  -> User NoUserExtra
-  -> UserStorage
-  -> ScimHandler STM (StoredUser NoUserExtra)
-updateUser uid user storage = do
-  existing <- lift $ STMMap.lookup uid storage
-  case existing of
-    Nothing -> throwScim (notFound "User" uid)
-    Just stored -> do
-      let newMeta = meta stored
-          newUser = WithMeta newMeta $ WithId uid user
-      lift $ STMMap.insert newUser uid storage
-      pure newUser
-
--- (there seems to be no readOnly fields in User)
-assertMutability :: User NoUserExtra -> StoredUser NoUserExtra -> Bool
-assertMutability _newUser _stored = True
-
-delGroup :: GroupId -> GroupStorage -> ScimHandler STM Bool
+delGroup :: Id -> GroupStorage -> ScimHandler STM Bool
 delGroup gid storage = do
   g <- lift $ STMMap.lookup gid storage
   case g of
     Nothing -> return False
     Just _ -> lift $ STMMap.delete gid storage >> return True
 
-delUser :: UserId -> UserStorage -> ScimHandler STM Bool
-delUser uid storage = do
-  u <- lift $ STMMap.lookup uid storage
-  case u of
-    Nothing -> return False
-    Just _ -> lift $ STMMap.delete uid storage >> return True
+----------------------------------------------------------------------------
+-- AuthDB
+
+instance AuthTypes Mock where
+  type AuthData Mock = Text
+  type AuthInfo Mock = ()
+
+instance AuthDB Mock TestServer where
+  authCheck = \case
+      Just "authorized" -> pure ()
+      _ -> throwScim (unauthorized "expected 'authorized'")
+
+----------------------------------------------------------------------------
+-- Misc
 
 -- 2018-01-01 00:00
 testDate :: UTCTime
@@ -182,19 +220,6 @@ createMeta rType = Meta
   , version = Weak "testVersion"
   , location = Common.URI $ URI "todo" Nothing "" "" ""
   }
-
--- insert with a simple incrementing integer id (good for testing)
-insertUser
-  :: User NoUserExtra
-  -> Meta
-  -> UserStorage
-  -> ScimHandler STM (StoredUser NoUserExtra)
-insertUser user met storage = do
-  size <- lift $ STMMap.size storage
-  let uid = pack . show $ size
-      newUser = WithMeta met $ WithId uid user
-  lift $ STMMap.insert newUser uid storage
-  return newUser
 
 -- Natural transformation from our transformer stack to the Servant stack
 -- this takes the initial environment and returns the transformation

@@ -4,7 +4,6 @@ module Test.Class.UserSpec (spec) where
 
 import           Test.Util
 
-import           Web.Scim.Schema.User (NoUserExtra)
 import           Web.Scim.Server (mkapp, UserAPI, userServer)
 import           Web.Scim.Server.Mock
 import           Test.Hspec
@@ -19,7 +18,7 @@ app :: IO Application
 app = do
   storage <- emptyTestStorage
   let auth = Just "authorized"
-  pure $ mkapp (Proxy @(UserAPI NoUserExtra)) (toServant (userServer auth)) (nt storage)
+  pure $ mkapp @Mock (Proxy @(UserAPI Mock)) (toServant (userServer auth)) (nt storage)
 
 spec :: Spec
 spec = beforeAll app $ do
@@ -280,3 +279,6 @@ conflict = [scim|
          "scimType": "uniqueness",
          "status": "409"
        }|] { matchStatus = 409 }
+
+----------------------------------------------------------------------------
+--

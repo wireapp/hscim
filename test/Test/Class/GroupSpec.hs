@@ -13,12 +13,12 @@ import           Test.Hspec hiding (shouldSatisfy)
 import           Test.Hspec.Wai      hiding (post, put, patch)
 import           Servant.API.Generic
 
-
 app :: IO Application
 app = do
   storage <- emptyTestStorage
   let auth = Just "authorized"
-  pure $ mkapp (Proxy @GroupAPI) (toServant (groupServer auth)) (nt storage)
+  pure $ mkapp @Mock (Proxy @(GroupAPI Mock))
+               (toServant (groupServer @Mock auth)) (nt storage)
 
 spec :: Spec
 spec = beforeAll app $ do
