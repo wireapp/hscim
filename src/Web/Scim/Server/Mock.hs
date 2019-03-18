@@ -95,13 +95,12 @@ instance UserDB Mock TestServer where
   postUser () user = do
     m <- userDB <$> ask
     let met = createMeta UserResource
-    newUser <- hoistSTM $ insertUser user met m
-    return newUser
+    hoistSTM $ insertUser user met m
   patchUser _ _ _ =
     throwScim (serverError "PATCH /Users not implemented")
   putUser () uid user = do
-    storage <- userDB <$> ask
-    hoistSTM $ updateUser uid user storage
+    m <- userDB <$> ask
+    hoistSTM $ updateUser uid user m
   deleteUser () uid = do
     m <- userDB <$> ask
     hoistSTM $ delUser uid m

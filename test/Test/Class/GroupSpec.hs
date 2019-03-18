@@ -32,10 +32,10 @@ spec = beforeAll app $ do
 
   describe "GET /Groups/:id" $ do
     it "responds with 404 for unknown group" $ do
-      get "/unknown" `shouldRespondWith` unknown
+      get "/9999" `shouldRespondWith` 404
 
-    it "retrieves stored user" $ do
-      -- the test implementation stores users with uid [0,1..n-1]
+    it "retrieves stored group" $ do
+      -- the test implementation stores groups with uid [0,1..n-1]
       get "/0" `shouldRespondWith` admins
 
   describe "PUT /Groups/:id" $ do
@@ -43,7 +43,7 @@ spec = beforeAll app $ do
       put "/0" adminUpdate0 `shouldRespondWith` updatedAdmins0
 
     it "does not create new group" $ do
-      put "/nonexisting" adminGroup `shouldRespondWith` 404
+      put "/9999" adminGroup `shouldRespondWith` 404
 
   describe "DELETE /Groups/:id" $ do
     it "responds with 404 for unknown group" $ do
@@ -125,11 +125,3 @@ updatedAdmins0 = [scim|
              "lastModified":"2018-01-01T00:00:00Z"
            }
         }|]
-
-
-unknown :: ResponseMatcher
-unknown = [scim|
-       { "schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"],
-         "status": "404",
-         "detail": "Group 'unknown' not found"
-       }|] { matchStatus = 404 }

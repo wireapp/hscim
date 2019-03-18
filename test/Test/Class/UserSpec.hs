@@ -31,9 +31,6 @@ spec = beforeAll app $ do
       post "/" newJim `shouldRespondWith` 201
       get "/" `shouldRespondWith` allUsers
 
-    it "doesn't allow duplicate usernames" $ do
-      post "/" newBarbara' `shouldRespondWith` conflict
-
     describe "filtering" $ do
       it "can filter by username" $ do
         get "/?filter=userName eq \"bjensen\"" `shouldRespondWith` onlyBarbara
@@ -53,7 +50,12 @@ spec = beforeAll app $ do
 
   describe "GET /Users/:id" $ do
     it "responds with 404 for unknown user" $ do
-      get "/unknown" `shouldRespondWith` unknown
+      get "/9999" `shouldRespondWith` 404
+
+    -- FUTUREWORK: currently it returns 404:
+    -- https://github.com/haskell-servant/servant/issues/1155
+    xit "responds with 401 for unparseable user ID" $ do
+      get "/unparseable" `shouldRespondWith` 401
 
     it "retrieves stored user" $ do
       -- the test implementation stores users with uid [0,1..n-1]
@@ -63,12 +65,12 @@ spec = beforeAll app $ do
     it "overwrites the user" $ do
       put "/0" barbUpdate0 `shouldRespondWith` updatedBarb0
 
-    it "does not create new user" $ do
-      put "/nonexisting" newBarbara `shouldRespondWith` 404
+    it "does not create new users" $ do
+      put "/9999" newBarbara `shouldRespondWith` 404
 
   describe "DELETE /Users/:id" $ do
     it "responds with 404 for unknown user" $ do
-      delete "/unknown" `shouldRespondWith` 404
+      delete "/9999" `shouldRespondWith` 404
 
     it "deletes a stored user" $ do
       delete "/0" `shouldRespondWith` 204
@@ -81,19 +83,6 @@ newBarbara :: ByteString
 newBarbara = [scim|
         { "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
           "userName":"bjensen",
-          "externalId":"bjensen",
-          "name":{
-            "formatted":"Ms. Barbara J Jensen III",
-            "familyName":"Jensen",
-            "givenName":"Barbara"
-          }
-        }|]
-
--- Same as 'newBarbara', but with a different userName (the names only differ in case)
-newBarbara' :: ByteString
-newBarbara' = [scim|
-        { "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
-          "userName":"BJensen",
           "externalId":"bjensen",
           "name":{
             "formatted":"Ms. Barbara J Jensen III",
@@ -265,20 +254,3 @@ emptyList = [scim|
          "itemsPerPage":0,
          "startIndex":0
        }|]
-
-unknown :: ResponseMatcher
-unknown = [scim|
-       { "schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"],
-         "status": "404",
-         "detail": "User 'unknown' not found"
-       }|] { matchStatus = 404 }
-
-conflict :: ResponseMatcher
-conflict = [scim|
-       { "schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"],
-         "scimType": "uniqueness",
-         "status": "409"
-       }|] { matchStatus = 409 }
-
-----------------------------------------------------------------------------
---
