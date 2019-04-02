@@ -96,11 +96,11 @@ instance UserDB Mock TestServer where
     m <- userDB <$> ask
     let met = createMeta UserResource
     hoistSTM $ insertUser user met m
-  patchUser _ _ _ =
-    throwScim (serverError "PATCH /Users not implemented")
   putUser () uid user = do
     m <- userDB <$> ask
     hoistSTM $ updateUser uid user m
+  patchUser _ _ _ =
+    throwScim (serverError "PATCH /Users not implemented")
   deleteUser () uid = do
     m <- userDB <$> ask
     hoistSTM $ delUser uid m
@@ -154,22 +154,25 @@ instance GroupTypes Mock where
   type GroupId Mock = Id
 
 instance GroupDB Mock TestServer where
-  list () = do
+  getGroups () = do
     m <- groupDB <$> ask
     groups <- liftSTM $ ListT.toList $ STMMap.stream m
-    return $ sortWith (Common.id . thing) $ snd <$> groups
-  get () i = do
+    return $ fromList . sortWith (Common.id . thing) $ snd <$> groups
+  getGroup () gid = do
     m <- groupDB <$> ask
-    liftSTM $ STMMap.lookup i m
-  create () grp = do
-    storage <- groupDB <$> ask
+    liftSTM (STMMap.lookup gid m) >>= \case
+      Nothing -> throwScim (notFound "Group" (pack (show gid)))
+      Just grp -> pure grp
+  postGroup () grp = do
+    m <- groupDB <$> ask
     let met = createMeta GroupResource
-    newGroup <- hoistSTM $ insertGroup grp met storage
-    pure newGroup
-  update () i g = do
+    hoistSTM $ insertGroup grp met m
+  putGroup () gid grp = do
     m <- groupDB <$> ask
-    hoistSTM $ updateGroup i g m
-  delete () gid = do
+    hoistSTM $ updateGroup gid grp m
+  patchGroup _ _ _ =
+    throwScim (serverError "PATCH /Users not implemented")
+  deleteGroup () gid = do
     m <- groupDB <$> ask
     hoistSTM $ delGroup gid m
 
@@ -192,12 +195,12 @@ updateGroup gid grp storage = do
       lift $ STMMap.insert newGroup gid storage
       pure newGroup
 
-delGroup :: Id -> GroupStorage -> ScimHandler STM Bool
+delGroup :: Id -> GroupStorage -> ScimHandler STM ()
 delGroup gid storage = do
   g <- lift $ STMMap.lookup gid storage
   case g of
-    Nothing -> return False
-    Just _ -> lift $ STMMap.delete gid storage >> return True
+    Nothing -> throwScim (notFound "Group" (pack (show gid)))
+    Just _ -> lift $ STMMap.delete gid storage
 
 ----------------------------------------------------------------------------
 -- AuthDB

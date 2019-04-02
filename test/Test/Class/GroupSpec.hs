@@ -24,7 +24,7 @@ spec :: Spec
 spec = beforeAll app $ do
   describe "GET & POST /Groups" $ do
     it "responds with [] in empty environment" $ do
-      get "/" `shouldRespondWith` [scim|[]|]
+      get "/" `shouldRespondWith` emptyList
 
     it "can insert then retrieve stored group" $ do
       post "/" adminGroup `shouldRespondWith` 201
@@ -67,18 +67,25 @@ adminGroup = [scim|
 
 groups :: ResponseMatcher
 groups = [scim|
-        [{ "schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],
-           "displayName":"Admin",
-           "members":[],
-           "id":"0",
-           "meta":{
-             "resourceType":"Group",
-             "location":"todo",
-             "created":"2018-01-01T00:00:00Z",
-             "version":"W/\"testVersion\"",
-             "lastModified":"2018-01-01T00:00:00Z"
-           }
-        }]|]
+        { "schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],
+          "Resources":
+            [{ "schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],
+               "displayName":"Admin",
+               "members":[],
+               "id":"0",
+               "meta":{
+                 "resourceType":"Group",
+                 "location":"todo",
+                 "created":"2018-01-01T00:00:00Z",
+                 "version":"W/\"testVersion\"",
+                 "lastModified":"2018-01-01T00:00:00Z"
+               }
+             }
+            ],
+          "totalResults":1,
+          "itemsPerPage":1,
+          "startIndex":0
+        }|]
 
 admins :: ResponseMatcher
 admins = [scim|
@@ -125,3 +132,12 @@ updatedAdmins0 = [scim|
              "lastModified":"2018-01-01T00:00:00Z"
            }
         }|]
+
+emptyList :: ResponseMatcher
+emptyList = [scim|
+       { "schemas": ["urn:ietf:params:scim:api:messages:2.0:ListResponse"],
+         "Resources":[],
+         "totalResults":0,
+         "itemsPerPage":0,
+         "startIndex":0
+       }|]
