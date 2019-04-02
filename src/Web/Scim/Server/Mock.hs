@@ -85,67 +85,41 @@ instance UserDB Mock TestServer where
             case filterUser filter_ user' of
               Right res -> pure res
               Left err  -> throwScim (badRequest InvalidFilter (Just err))
-    fromList . sortWith (Common.id . thing) <$>
-      filterM check (snd <$> users)
+    fromList . sortWith (Common.id . thing) <$> filterM check (snd <$> users)
+
   getUser () uid = do
     m <- userDB <$> ask
     liftSTM (STMMap.lookup uid m) >>= \case
       Nothing -> throwScim (notFound "User" (pack (show uid)))
       Just x  -> pure x
+
   postUser () user = do
     m <- userDB <$> ask
-    let met = createMeta UserResource
-    hoistSTM $ insertUser user met m
+    uid <- Id <$> liftSTM (STMMap.size m)
+    let newUser = WithMeta (createMeta UserResource) $ WithId uid user
+    liftSTM $ STMMap.insert newUser uid m
+    return newUser
+
   putUser () uid user = do
     m <- userDB <$> ask
-    hoistSTM $ updateUser uid user m
-  patchUser _ _ _ =
-    throwScim (serverError "PATCH /Users not implemented")
+    liftSTM (STMMap.lookup uid m) >>= \case
+      Nothing -> throwScim (notFound "User" (pack (show uid)))
+      Just stored -> do
+        let newUser = WithMeta (meta stored) $ WithId uid user
+        liftSTM $ STMMap.insert newUser uid m
+        pure newUser
+
+  patchUser _ _ _ = throwScim (serverError "PATCH /Users not implemented")
+
   deleteUser () uid = do
     m <- userDB <$> ask
-    hoistSTM $ delUser uid m
-
-updateUser
-  :: Id
-  -> User Mock
-  -> UserStorage
-  -> ScimHandler STM (StoredUser Mock)
-updateUser uid user storage = do
-  existing <- lift $ STMMap.lookup uid storage
-  case existing of
-    Nothing -> throwScim (notFound "User" (pack (show uid)))
-    Just stored -> do
-      let newMeta = meta stored
-          newUser = WithMeta newMeta $ WithId uid user
-      lift $ STMMap.insert newUser uid storage
-      pure newUser
+    liftSTM (STMMap.lookup uid m) >>= \case
+      Nothing -> throwScim (notFound "User" (pack (show uid)))
+      Just _ -> liftSTM $ STMMap.delete uid m
 
 -- (there seems to be no readOnly fields in User)
 assertMutability :: User Mock -> StoredUser Mock -> Bool
 assertMutability _newUser _stored = True
-
-delUser
-  :: Id
-  -> UserStorage
-  -> ScimHandler STM ()
-delUser uid storage = do
-  u <- lift $ STMMap.lookup uid storage
-  case u of
-    Nothing -> throwScim (notFound "User" (pack (show uid)))
-    Just _ -> lift $ STMMap.delete uid storage
-
--- insert with a simple incrementing integer id (good for testing)
-insertUser
-  :: User Mock
-  -> Meta
-  -> UserStorage
-  -> ScimHandler STM (StoredUser Mock)
-insertUser user met storage = do
-  size <- lift $ STMMap.size storage
-  let uid = Id size
-      newUser = WithMeta met $ WithId uid user
-  lift $ STMMap.insert newUser uid storage
-  return newUser
 
 ----------------------------------------------------------------------------
 -- GroupDB
@@ -158,49 +132,36 @@ instance GroupDB Mock TestServer where
     m <- groupDB <$> ask
     groups <- liftSTM $ ListT.toList $ STMMap.stream m
     return $ fromList . sortWith (Common.id . thing) $ snd <$> groups
+
   getGroup () gid = do
     m <- groupDB <$> ask
     liftSTM (STMMap.lookup gid m) >>= \case
       Nothing -> throwScim (notFound "Group" (pack (show gid)))
       Just grp -> pure grp
+
   postGroup () grp = do
     m <- groupDB <$> ask
-    let met = createMeta GroupResource
-    hoistSTM $ insertGroup grp met m
+    gid <- Id <$> liftSTM (STMMap.size m)
+    let newGroup = WithMeta (createMeta GroupResource) $ WithId gid grp
+    liftSTM $ STMMap.insert newGroup gid m
+    return newGroup
+
   putGroup () gid grp = do
     m <- groupDB <$> ask
-    hoistSTM $ updateGroup gid grp m
-  patchGroup _ _ _ =
-    throwScim (serverError "PATCH /Users not implemented")
+    liftSTM (STMMap.lookup gid m) >>= \case
+      Nothing -> throwScim (notFound "Group" (pack (show gid)))
+      Just stored -> do
+        let newGroup = WithMeta (meta stored) $ WithId gid grp
+        liftSTM $ STMMap.insert newGroup gid m
+        pure newGroup
+
+  patchGroup _ _ _ = throwScim (serverError "PATCH /Users not implemented")
+
   deleteGroup () gid = do
     m <- groupDB <$> ask
-    hoistSTM $ delGroup gid m
-
-insertGroup :: Group -> Meta -> GroupStorage -> ScimHandler STM (StoredGroup Mock)
-insertGroup grp met storage = do
-  size <- lift $ STMMap.size storage
-  let gid = Id size
-      newGroup = WithMeta met $ WithId gid grp
-  lift $ STMMap.insert newGroup gid storage
-  return newGroup
-
-updateGroup :: Id -> Group -> GroupStorage -> ScimHandler STM (StoredGroup Mock)
-updateGroup gid grp storage = do
-  existing <- lift $ STMMap.lookup gid storage
-  case existing of
-    Nothing -> throwScim (notFound "Group" (pack (show gid)))
-    Just stored -> do
-      let newMeta = meta stored
-          newGroup = WithMeta newMeta $ WithId gid grp
-      lift $ STMMap.insert newGroup gid storage
-      pure newGroup
-
-delGroup :: Id -> GroupStorage -> ScimHandler STM ()
-delGroup gid storage = do
-  g <- lift $ STMMap.lookup gid storage
-  case g of
-    Nothing -> throwScim (notFound "Group" (pack (show gid)))
-    Just _ -> lift $ STMMap.delete gid storage
+    liftSTM (STMMap.lookup gid m) >>= \case
+      Nothing -> throwScim (notFound "Group" (pack (show gid)))
+      Just _ -> liftSTM $ STMMap.delete gid m
 
 ----------------------------------------------------------------------------
 -- AuthDB
