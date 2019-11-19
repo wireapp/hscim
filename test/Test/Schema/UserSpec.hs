@@ -3,7 +3,7 @@
 
 module Test.Schema.UserSpec (spec) where
 
-import           Test.Util
+import           Web.Scim.Test.Util
 
 import           Web.Scim.Schema.Common (URI(..))
 import           Web.Scim.Schema.Schema (Schema(..))

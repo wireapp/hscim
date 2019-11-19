@@ -34,34 +34,47 @@ extra-source-files:
   - README.md
 
 dependencies:
-  - base >= 4.11 && < 5
-  - bytestring
   - aeson
   - aeson-qq
-  - mtl
-  - servant
-  - servant-server >= 0.14.1
-  - text
-  - time
-  - wai
-  - network-uri
-  - network-uri-static >= 0.1.1.0
-  - unordered-containers
+  - attoparsec
+  - base >= 4.11 && < 5
+  - bytestring
   - email-validate
   - errors
-  - stm
-  - list-t
-  - http-types
-  - stm-containers
-  - http-media
-  - uuid
-  - template-haskell
-  - scientific
-  - attoparsec
-  - microlens
-  - http-api-data
-  - mmorph
   - hashable
+  - hedgehog
+  - hspec
+  - hspec-expectations
+  - hspec-wai
+  - http-api-data
+  - http-media
+  - http-types
+  - hw-hspec-hedgehog
+  - list-t
+  - microlens
+  - mmorph
+  - mtl
+  - mtl
+  - network-uri
+  - network-uri-static >= 0.1.1.0
+  - scientific
+  - servant
+  - servant-server
+  - servant-server >= 0.14.1
+  - stm
+  - stm-containers
+  - template-haskell
+  - text
+  - time
+  - unordered-containers
+  - uuid
+  - vector
+  - wai
+  - wai-extra
+  - wai-logger
+  - warp
+
+
 
 ghc-options: -Wall
 
@@ -85,27 +98,25 @@ tests:
       - test
       - src
     dependencies:
-      - base
-      - bytestring
-      - hscim
-      - hspec
-      - hspec-wai
       - aeson
       - aeson-qq
-      - http-types
-      - text
+      - base
       - bytestring
-      - wai-extra
-      - stm-containers
-      - mtl
-      - time
-      - servant-server
-      - vector
-      - hspec-expectations
-      - hspec-discover
-      - warp
-      - template-haskell
-      - aeson-qq
-      - wai-logger
       - hedgehog
+      - hscim
+      - hspec
+      - hspec-discover
+      - hspec-expectations
+      - hspec-wai
+      - http-types
       - hw-hspec-hedgehog
+      - mtl
+      - servant-server
+      - stm-containers
+      - template-haskell
+      - text
+      - time
+      - vector
+      - wai-extra
+      - wai-logger
+      - warp

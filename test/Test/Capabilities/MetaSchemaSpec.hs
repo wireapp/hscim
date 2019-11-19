@@ -2,7 +2,7 @@
 
 module Test.Capabilities.MetaSchemaSpec (spec) where
 
-import           Test.Util
+import           Web.Scim.Test.Util
 
 import qualified Data.List as List
 import           Data.Aeson

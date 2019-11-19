@@ -2,7 +2,7 @@
 
 module Test.Class.UserSpec (spec) where
 
-import           Test.Util
+import           Web.Scim.Test.Util
 
 import           Web.Scim.Server (mkapp, UserAPI, userServer)
 import           Web.Scim.Server.Mock

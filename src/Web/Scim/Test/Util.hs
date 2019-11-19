@@ -1,8 +1,10 @@
+
 {-# LANGUAGE TemplateHaskell #-}
 
-module Test.Util (
+module Web.Scim.Test.Util (
   -- * Making wai requests
-    post, put, patch
+    post, put, patch,
+    post', put', patch', get'
   -- * Request/response quasiquoter
   , scim
   -- * JSON parsing
@@ -42,6 +44,20 @@ put path = request methodPut path [(hContentType, "application/scim+json")]
 
 patch :: ByteString -> L.ByteString -> WaiSession SResponse
 patch path = request methodPatch path [(hContentType, "application/scim+json")]
+
+get' :: ByteString -> WaiSession SResponse
+get' path = request methodGet path [(hAuthorization, "authorized"), (hContentType, "application/scim+json")] ""
+
+post' :: ByteString -> L.ByteString -> WaiSession SResponse
+post' path = request methodPost path [(hAuthorization, "authorized"), (hContentType, "application/scim+json")]
+
+put' :: ByteString -> L.ByteString -> WaiSession SResponse
+put' path = request methodPut path [(hAuthorization, "authorized"), (hContentType, "application/scim+json")]
+
+patch' :: ByteString -> L.ByteString -> WaiSession SResponse
+patch' path = request methodPatch path [(hAuthorization, "authorized"), (hContentType, "application/scim+json")]
+
+
 
 ----------------------------------------------------------------------------
 -- Redefine wai quasiquoter

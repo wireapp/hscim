@@ -2,7 +2,7 @@
 
 module Test.Class.GroupSpec (spec) where
 
-import           Test.Util
+import           Web.Scim.Test.Util
 
 import           Network.Wai (Application)
 import           Servant (Proxy(Proxy))
