@@ -128,7 +128,7 @@ allUsers = [scim|
         { "schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],
           "totalResults": 2,
           "itemsPerPage": 2,
-          "startIndex": 0,
+          "startIndex": 1,
           "Resources":
             [{ "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
                "userName":"bjensen",
@@ -171,7 +171,7 @@ onlyBarbara = [scim|
         { "schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],
           "totalResults": 1,
           "itemsPerPage": 1,
-          "startIndex": 0,
+          "startIndex": 1,
           "Resources":
             [{ "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
                "userName":"bjensen",
@@ -252,5 +252,5 @@ emptyList = [scim|
          "Resources":[],
          "totalResults":0,
          "itemsPerPage":0,
-         "startIndex":0
+         "startIndex":1
        }|]

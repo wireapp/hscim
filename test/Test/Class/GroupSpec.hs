@@ -84,7 +84,7 @@ groups = [scim|
             ],
           "totalResults":1,
           "itemsPerPage":1,
-          "startIndex":0
+          "startIndex":1
         }|]
 
 admins :: ResponseMatcher
@@ -139,5 +139,5 @@ emptyList = [scim|
          "Resources":[],
          "totalResults":0,
          "itemsPerPage":0,
-         "startIndex":0
+         "startIndex":1
        }|]

@@ -113,7 +113,7 @@ resourceTypes = [scim|
     "name":"Group",
     "endpoint":"/Groups"}],
  "totalResults":2,
- "startIndex":0,
+ "startIndex":1,
  "itemsPerPage":2
 }
 |]

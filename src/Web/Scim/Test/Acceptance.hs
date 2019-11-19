@@ -3,9 +3,9 @@
 -- implementation is compatible with popular SCIM 2.0 providers
 module Web.Scim.Test.Acceptance where
 
-import Web.Scim.Test.Util (scim, post,  put, patch, get', post', put', patch')
+import Web.Scim.Test.Util (scim, post,  put, patch, get', post', put', patch', delete')
 import Test.Hspec (Spec, it, beforeAll, pending, describe, shouldBe)
-import Test.Hspec.Wai (shouldRespondWith, delete, get, matchStatus)
+import Test.Hspec.Wai (shouldRespondWith, delete, get, matchStatus, matchBody, MatchBody(..))
 import Network.Wai (Application)
 
 
@@ -55,31 +55,9 @@ microsoftAzure app = do
             "roles": []
           }
         |]
-        -- TODO Slightly modify
-        post' "/Users" user `shouldRespondWith` [scim|
-          {
-            "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
-            "id": "48af03ac28ad4fb88478",
-            "externalId": "0a21f0f2-8d2a-4f8e-bf98-7363c4aed4ef",
-            "meta": {
-                    "resourceType": "User",
-                    "created": "2018-03-27T19:59:26.000Z",
-                    "lastModified": "2018-03-27T19:59:26.000Z"
-            },
-            "userName": "Test_User_ab6490ee-1e48-479e-a20b-2d77186b5dd1",
-            "name": {
-                    "formatted": "givenName familyName",
-                    "familyName": "familyName",
-                    "givenName": "givenName"
-            },
-            "active": true,
-            "emails": [{
-                    "value": "Test_User_fd0ea19b-0777-472c-9f96-4f70d2226f2e@testuser.com",
-                    "type": "work",
-                    "primary": true
-            }]
-          }
-        |] { matchStatus = 201 }
+        post' "/Users" user `shouldRespondWith` 201
+      it "Get user by query" $ do
+        get' "/Users?filter userName eq \"Test_User_ab6490ee-1e48-479e-a20b-2d77186b5dd1\"" `shouldRespondWith` 200
       it "Get user by query, zero results" $ do
         get' "/Users?filter=userName eq \"non-existent user\"" `shouldRespondWith` [scim|
           {
@@ -87,7 +65,46 @@ microsoftAzure app = do
             "totalResults": 0,
             "Resources": [],
             "startIndex": 1,
-            "itemsPerPage": 20
+            "itemsPerPage": 0
           }
         |] { matchStatus = 200 }
+      it "Update user [Multi-valued properties" $ do
+        patch' "/Users/0" [scim|
+            {
+              "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+              "Operations": [
+                  {
+                      "op": "Replace",
+                      "path": "emails[type eq \"work\"].value",
+                      "value": "updatedEmail@microsoft.com"
+                  },
+                  {
+                      "op": "Replace",
+                      "path": "name.familyName",
+                      "value": "updatedFamilyName"
+                  }
+              ]
+            }
+        |] `shouldRespondWith` 200
+        -- TODO match body
+      it "Update user [Single-valued properties]" $ do
+        patch' "/Users/0"
+          [scim|
+            {
+                    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                    "Operations": [{
+                            "op": "Replace",
+                            "path": "userName",
+                            "value": "5b50642d-79fc-4410-9e90-4c077cdd1a59@testuser.com"
+                    }]
+            }
+          |] `shouldRespondWith` 200
+          -- TODO match body
+      it "Delete User" $ do
+        delete' "/Users/0" "" `shouldRespondWith` 204
+        delete' "/Users/0" "" `shouldRespondWith` 404
+    describe "Group operations" $ 
+      it "is in progress" $ \app -> pending
+
+          
 

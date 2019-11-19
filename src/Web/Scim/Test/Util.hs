@@ -4,7 +4,7 @@
 module Web.Scim.Test.Util (
   -- * Making wai requests
     post, put, patch,
-    post', put', patch', get'
+    post', put', patch', get', delete'
   -- * Request/response quasiquoter
   , scim
   -- * JSON parsing
@@ -56,6 +56,10 @@ put' path = request methodPut path [(hAuthorization, "authorized"), (hContentTyp
 
 patch' :: ByteString -> L.ByteString -> WaiSession SResponse
 patch' path = request methodPatch path [(hAuthorization, "authorized"), (hContentType, "application/scim+json")]
+
+delete' :: ByteString -> L.ByteString -> WaiSession SResponse
+delete' path = request methodDelete path [(hAuthorization, "authorized"), (hContentType, "application/scim+json")]
+
 
 
 
