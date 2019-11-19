@@ -32,7 +32,7 @@ fromList list = ListResponse
   { schemas = [ListResponse2_0]
   , totalResults = len
   , itemsPerPage = len
-  , startIndex = 0
+  , startIndex = 1
   , resources = list
   }
   where
