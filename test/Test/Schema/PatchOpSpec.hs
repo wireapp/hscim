@@ -1,11 +1,15 @@
+{-# LANGUAGE QuasiQuotes #-}
 module Test.Schema.PatchOpSpec (spec) where
 
 import Data.Foldable (for_)
-import Test.Hspec (Spec, describe, it, pending, shouldBe)
+import Test.Hspec (Spec, describe, it, pending, shouldBe, shouldSatisfy)
 import Web.Scim.Test.Util (scim, post, put, patch)
+import Web.Scim.Schema.PatchOp (PatchOp)
+import Data.Aeson.Types (fromJSON, Result(Success, Error))
 
 spec :: Spec
 spec = do
+  let 
   -- NB: The hscim library itself does not _implement_ or force an implementation of PATCH spec for you.
   -- Instead, we have a set of acceptance tests that are parameterized
   describe "PATCH" $ do
@@ -14,8 +18,14 @@ spec = do
         -- NB: Actually Section 5 https://tools.ietf.org/html/rfc7643#section-5
         pending
     describe "urn:ietf:params:scim:api:messages:2.0:PatchOp" $ do
-      it "The body of each request MUST contain the \"schemas\" attribute with the URI value of \"urn:ietf:params:scim:api:messages:2.0:PatchOp\"." $
-        pending
+      describe "The body of each request MUST contain the \"schemas\" attribute with the URI value of \"urn:ietf:params:scim:api:messages:2.0:PatchOp\"." $ do
+        it "rejects an empty schemas list" $ do
+          fromJSON @PatchOp [scim| { 
+            "schemas": [],
+            "operations": []
+          }|] `shouldSatisfy` (\case
+                    Success a -> False
+                    Error a -> True)
       describe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
         let
           examples =
@@ -62,4 +72,5 @@ spec = do
         -- describe "Remove" $ _
         -- describe "Modify" $ _
     
+
 

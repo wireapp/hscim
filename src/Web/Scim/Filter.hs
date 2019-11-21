@@ -28,8 +28,10 @@ module Web.Scim.Filter
   , CompValue(..)
   , CompareOp(..)
   , Attribute(..)
+  , Path(Path)
   ) where
 
+import Control.Applicative((<|>), optional)
 import Data.Scientific
 import Data.Text
 import Data.Text.Encoding
@@ -38,10 +40,15 @@ import Data.Attoparsec.ByteString.Char8
 import Data.Aeson.Parser as Aeson
 import Data.Aeson.Text as Aeson
 import Data.Aeson as Aeson
+import Data.List.NonEmpty (NonEmpty)
+import Web.Scim.Schema.Schema (Schema)
 import Lens.Micro
 import Web.HttpApiData
 
 import Web.Scim.Schema.User
+import Web.Scim.Schema.Schema (fromSchemaUri, pSchema)
+
+import qualified Data.List.NonEmpty as NonEmpty
 
 ----------------------------------------------------------------------------
 -- Types
@@ -74,6 +81,8 @@ data CompareOp
 -- Only usernames are supported as attributes. Paths are not supported.
 data Attribute
   = AttrUserName
+  | AttrDisplayName
+  | AttrExternalId
   deriving (Eq, Ord, Show)
 
 -- | A filter.
@@ -87,8 +96,74 @@ data Filter
   = FilterAttrCompare Attribute CompareOp CompValue
   deriving (Eq, Show)
 
+
+-- These are all WIP, to support more complex filters; not currently exported
+
+-- | valuePath = attrPath "[" valFilter "]"
+data ValuePath  = ValuePath AttrPath Filter
+  deriving Show
+
+-- | ATTRNAME  = ALPHA *(nameChar)
+data AttrName = AttrName Text
+  deriving Show
+
+-- | subAttr   = "." ATTRNAME
+data SubAttr = SubAttr AttrName
+  deriving Show
+
+-- | attrPath  = [URI ":"] ATTRNAME *1subAtt
+data AttrPath = AttrPath (Maybe Schema) AttrName (NonEmpty SubAttr)
+  deriving Show
+
+-- | PATH = attrPath / valuePath [subAttr]
+--
+-- Currently we don't support matching on lists in paths as
+-- we currently don't support filtering on arbitrary attributes yet
+-- e.g. 
+-- @
+-- "path":"members[value eq
+--            \"2819c223-7f76-453a-919d-413861904646\"].displayName"
+-- @
+-- is not supported
+data Path
+  = Path AttrPath 
+  | SubAttrPath ValuePath (Maybe SubAttr)
+  deriving Show
+
+
 ----------------------------------------------------------------------------
 -- Parsing
+
+-- | ATTRNAME  = ALPHA *(nameChar)
+pAttrName :: Parser AttrName
+pAttrName = undefined
+
+-- | An honest version of many1
+many1'' :: Parser a -> Parser (NonEmpty a)
+many1'' a = NonEmpty.fromList <$> many1 a
+
+-- | attrPath  = [URI ":"] ATTRNAME *1subAtt
+pAttrPath :: Parser AttrPath
+pAttrPath =
+  AttrPath 
+    <$> (optional pSchema <* char ':')
+    <*> pAttrName
+    <*> many1'' pSubAttr
+
+
+-- | subAttr   = "." ATTRNAME
+pSubAttr :: Parser SubAttr
+pSubAttr = char '.' *> (SubAttr <$> pAttrName)
+
+-- | valuePath = attrPath "[" valFilter "]"
+pValuePath :: Parser ValuePath
+pValuePath =
+  ValuePath <$> pAttrPath <*> (char '[' *> pFilter <* char ']')
+
+-- | PATH = attrPath / valuePath [subAttr]
+pPath :: Parser Path
+pPath = 
+  Path <$> pAttrPath <|> SubAttrPath <$> pValuePath <*> optional pSubAttr
 
 -- Note: this parser is written with Attoparsec because I don't know how to
 -- lift an Attoparsec parser (from Aeson) to Megaparsec
@@ -115,6 +190,8 @@ pCompValue = choice
   ]
 
 -- | Comparison operator parser.
+--
+-- TODO: Replace with asciiCI
 pCompareOp :: Parser CompareOp
 pCompareOp = choice
   [ OpEq <$ stringCI "eq"

@@ -9,6 +9,8 @@ import           Web.Scim.Capabilities.MetaSchema.ResourceType
 
 import           Data.Text
 import           Data.Aeson
+import Data.Attoparsec.ByteString (Parser, string)
+import Control.Applicative ((<|>))
 
 -- | All schemas that we support.
 data Schema = User20
@@ -18,6 +20,7 @@ data Schema = User20
             | ResourceType20
             | ListResponse2_0
             | Error2_0
+            | PatchOp20
             | CustomSchema Text
   deriving (Show, Eq)
 
@@ -43,10 +46,33 @@ getSchemaUri ListResponse2_0 =
   "urn:ietf:params:scim:api:messages:2.0:ListResponse"
 getSchemaUri Error2_0 =
   "urn:ietf:params:scim:api:messages:2.0:Error"
+getSchemaUri PatchOp20 =
+  "urn:ietf:params:scim:api:messages:2.0:PatchOp"
 getSchemaUri (CustomSchema x) =
   x
 
+-- | Parsers known schemas. Fails on unknown schemas (E.g. CustomSchema escape hatch doesn't work)
+pSchema :: Parser Schema
+pSchema =
+  User20
+    <$ "urn:ietf:params:scim:schemas:core:2.0:User" <|>
+  ServiceProviderConfig20 
+    <$ "urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig" <|>
+  Group20
+    <$ "urn:ietf:params:scim:schemas:core:2.0:Group" <|>
+  Schema20
+    <$ "urn:ietf:params:scim:schemas:core:2.0:Schema" <|>
+  ResourceType20
+    <$ "urn:ietf:params:scim:schemas:core:2.0:ResourceType" <|>
+  ListResponse2_0
+    <$ "urn:ietf:params:scim:api:messages:2.0:ListResponse" <|> 
+  Error2_0
+    <$ "urn:ietf:params:scim:api:messages:2.0:Error" <|> 
+  PatchOp20
+    <$ "urn:ietf:params:scim:api:messages:2.0:PatchOp"
 -- | Get a schema by its URI.
+--
+-- TODO probably to lenient. want to only accept valid URNs
 fromSchemaUri :: Text -> Schema
 fromSchemaUri s = case s of
   "urn:ietf:params:scim:schemas:core:2.0:User" ->
@@ -63,6 +89,8 @@ fromSchemaUri s = case s of
     ListResponse2_0
   "urn:ietf:params:scim:api:messages:2.0:Error" ->
     Error2_0
+  "urn:ietf:params:scim:api:messages:2.0:PatchOp" ->
+    PatchOp20
   x ->
     CustomSchema x
 
@@ -83,6 +111,8 @@ getSchema ResourceType20 =
 getSchema ListResponse2_0 =
   Nothing
 getSchema Error2_0 =
+  Nothing
+getSchema PatchOp20 =
   Nothing
 -- This is not controlled by @hscim@ so we can't write a schema.
 -- FUTUREWORK: allow supplying schemas for 'CustomSchema'.
