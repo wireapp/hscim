@@ -33,6 +33,16 @@ data Operation = Operation
 instance FromJSON Operation where
   parseJSON = undefined
 
+data Path
+  = Path AttrPath 
+  | SubAttrPath ValuePath (Maybe SubAttr)
+  deriving Show
+
+-- | PATH = attrPath / valuePath [subAttr]
+pPath :: Parser Path
+pPath = 
+  Path <$> pAttrPath <|> SubAttrPath <$> pValuePath <*> optional pSubAttr
+
 data Op
   = Add AddOp
   | Remove RemoveOp
