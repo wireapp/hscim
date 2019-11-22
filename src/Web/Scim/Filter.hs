@@ -74,7 +74,7 @@ data CompareOp
   | OpGe            -- ^ Greater than or equal to
   | OpLt            -- ^ Less than
   | OpLe            -- ^ Less than or equal to
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Enum, Bounded)
 
 -- | An attribute (e.g. username).
 --
@@ -83,7 +83,7 @@ data Attribute
   = AttrUserName
   | AttrDisplayName
   | AttrExternalId
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Enum, Bounded)
 
 -- | A filter.
 --
@@ -130,13 +130,14 @@ data Path
   | SubAttrPath ValuePath (Maybe SubAttr)
   deriving Show
 
-
 ----------------------------------------------------------------------------
 -- Parsing
 
 -- | ATTRNAME  = ALPHA *(nameChar)
+--
+-- TODO: We simply support only a few whitelisted names now
 pAttrName :: Parser AttrName
-pAttrName = undefined
+pAttrName = AttrName . decodeUtf8 <$> (stringCI "userName" <|> stringCI "displayName" <|> stringCI "externalId")
 
 -- | An honest version of many1
 many1'' :: Parser a -> Parser (NonEmpty a)
@@ -208,7 +209,9 @@ pCompareOp = choice
 -- | Attribute name parser.
 pAttribute :: Parser Attribute
 pAttribute = choice
-  [ AttrUserName <$ stringCI "username"
+  [ AttrUserName <$ stringCI "userName"
+  , AttrDisplayName <$ stringCI "displayName"
+  , AttrExternalId <$ stringCI "externalId"
   ]
 
 -- | Filter parser.
@@ -258,7 +261,9 @@ rCompareOp = \case
 -- | Attribute name renderer.
 rAttribute :: Attribute -> Text
 rAttribute = \case
-  AttrUserName -> "username"
+  AttrUserName -> "userName"
+  AttrDisplayName -> "displayName"
+  AttrExternalId -> "externalId"
 
 ----------------------------------------------------------------------------
 -- Applying

@@ -33,11 +33,11 @@ genCompValue = Gen.choice
 
 genCompareOp :: Gen CompareOp
 genCompareOp = Gen.element
-  [ OpEq, OpNe, OpCo, OpSw, OpEw, OpGt, OpGe, OpLt, OpLe ]
+  [ minBound .. ]
 
 genAttribute :: Gen Attribute
 genAttribute = Gen.element
-  [ AttrUserName ]
+  [ minBound .. ]
 
 genFilter :: Gen Filter
 genFilter = Gen.choice
