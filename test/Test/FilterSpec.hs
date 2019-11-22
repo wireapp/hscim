@@ -3,6 +3,7 @@
 module Test.FilterSpec (spec) where
 
 import           Web.Scim.Filter
+import           Web.Scim.Schema.Schema (Schema(User20))
 
 import           Test.Hspec
 import           HaskellWorks.Hspec.Hedgehog
@@ -35,11 +36,24 @@ genCompareOp :: Gen CompareOp
 genCompareOp = Gen.element
   [ minBound .. ]
 
-genAttribute :: Gen Attribute
-genAttribute = Gen.element
+-- TODO(arianvp): We don't support any sub-attributes currently
+genSubAttr :: Gen (Maybe SubAttr)
+genSubAttr = pure Nothing
+
+-- TODO(arianvp): We only support the core schema so far, enterprise and custom schemas
+-- will come later
+genSchema :: Gen Schema
+genSchema = pure User20
+ 
+
+genAttrPath :: Gen AttrPath
+genAttrPath = AttrPath <$> Gen.maybe genSchema <*> genAttrName  <*> genSubAttr
+
+genAttrName :: Gen AttrName
+genAttrName = Gen.element
   [ minBound .. ]
 
 genFilter :: Gen Filter
 genFilter = Gen.choice
-  [ FilterAttrCompare <$> genAttribute <*> genCompareOp <*> genCompValue
+  [ FilterAttrCompare <$> genAttrPath <*> genCompareOp <*> genCompValue
   ]

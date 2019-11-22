@@ -9,7 +9,7 @@ import           Web.Scim.Capabilities.MetaSchema.ResourceType
 
 import           Data.Text
 import           Data.Aeson
-import Data.Attoparsec.ByteString (Parser, string)
+import Data.Attoparsec.ByteString (Parser,  (<?>))
 import Control.Applicative ((<|>))
 
 -- | All schemas that we support.
@@ -54,7 +54,7 @@ getSchemaUri (CustomSchema x) =
 -- | Parsers known schemas. Fails on unknown schemas (E.g. CustomSchema escape hatch doesn't work)
 pSchema :: Parser Schema
 pSchema =
-  User20
+  (User20
     <$ "urn:ietf:params:scim:schemas:core:2.0:User" <|>
   ServiceProviderConfig20 
     <$ "urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig" <|>
@@ -69,7 +69,7 @@ pSchema =
   Error2_0
     <$ "urn:ietf:params:scim:api:messages:2.0:Error" <|> 
   PatchOp20
-    <$ "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+    <$ "urn:ietf:params:scim:api:messages:2.0:PatchOp") <?> "unknown schema"
 -- | Get a schema by its URI.
 --
 -- TODO probably to lenient. want to only accept valid URNs

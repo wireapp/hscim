@@ -27,8 +27,15 @@ module Web.Scim.Filter
   -- * Constructing filters
   , CompValue(..)
   , CompareOp(..)
-  , Attribute(..)
-  , Path(Path)
+  , AttrName(..)
+  , AttrPath(..)
+  , ValuePath(..)
+  , SubAttr(..)
+  , pAttrPath
+  , pAttrName
+  , pValuePath
+  , pSubAttr
+  , pFilter
   ) where
 
 import Control.Applicative((<|>), optional)
@@ -41,14 +48,12 @@ import Data.Aeson.Parser as Aeson
 import Data.Aeson.Text as Aeson
 import Data.Aeson as Aeson
 import Data.List.NonEmpty (NonEmpty)
-import Web.Scim.Schema.Schema (Schema)
+import Data.Maybe (fromMaybe)
 import Lens.Micro
 import Web.HttpApiData
 
 import Web.Scim.Schema.User
-import Web.Scim.Schema.Schema (fromSchemaUri, pSchema)
-
-import qualified Data.List.NonEmpty as NonEmpty
+import Web.Scim.Schema.Schema (Schema(User20), getSchemaUri, fromSchemaUri, pSchema)
 
 ----------------------------------------------------------------------------
 -- Types
@@ -78,8 +83,9 @@ data CompareOp
 
 -- | An attribute (e.g. username).
 --
--- Only usernames are supported as attributes. Paths are not supported.
-data Attribute
+-- ATTRNAME  = ALPHA *(nameChar)
+-- TODO(arianvp): Actually implement the grammar here, instead of a whitelist of attributes.
+data AttrName
   = AttrUserName
   | AttrDisplayName
   | AttrExternalId
@@ -91,29 +97,30 @@ data Attribute
 -- validity on the type level. If a filter does something silly (e.g. tries
 -- to compare a username with a boolean), it will be caught during filtering
 -- and an appropriate error message will be thrown (see 'filterUser').
+--
+-- TODO(arianvp): Implement the following grammar fully:
+-- FILTER    = attrExp / logExp / valuePath / *1"not" "(" FILTER ")"
 data Filter
   -- | Compare the attribute value with a literal
-  = FilterAttrCompare Attribute CompareOp CompValue
+  = FilterAttrCompare AttrPath CompareOp CompValue
   deriving (Eq, Show)
-
 
 -- These are all WIP, to support more complex filters; not currently exported
 
 -- | valuePath = attrPath "[" valFilter "]"
+-- TODO(arianvp): This is a slight simplification at the moment as we
+-- don't support the complete Filter garmar. This should be a
+-- valFilter, not a FILTER. 
 data ValuePath  = ValuePath AttrPath Filter
-  deriving Show
-
--- | ATTRNAME  = ALPHA *(nameChar)
-data AttrName = AttrName Text
-  deriving Show
+  deriving (Eq, Show)
 
 -- | subAttr   = "." ATTRNAME
 data SubAttr = SubAttr AttrName
-  deriving Show
+  deriving (Eq, Show)
 
 -- | attrPath  = [URI ":"] ATTRNAME *1subAtt
-data AttrPath = AttrPath (Maybe Schema) AttrName (NonEmpty SubAttr)
-  deriving Show
+data AttrPath = AttrPath (Maybe Schema) AttrName (Maybe SubAttr)
+  deriving (Eq, Show)
 
 -- | PATH = attrPath / valuePath [subAttr]
 --
@@ -125,31 +132,19 @@ data AttrPath = AttrPath (Maybe Schema) AttrName (NonEmpty SubAttr)
 --            \"2819c223-7f76-453a-919d-413861904646\"].displayName"
 -- @
 -- is not supported
-data Path
-  = Path AttrPath 
-  | SubAttrPath ValuePath (Maybe SubAttr)
-  deriving Show
 
 ----------------------------------------------------------------------------
 -- Parsing
 
 -- | ATTRNAME  = ALPHA *(nameChar)
---
--- TODO: We simply support only a few whitelisted names now
-pAttrName :: Parser AttrName
-pAttrName = AttrName . decodeUtf8 <$> (stringCI "userName" <|> stringCI "displayName" <|> stringCI "externalId")
-
--- | An honest version of many1
-many1'' :: Parser a -> Parser (NonEmpty a)
-many1'' a = NonEmpty.fromList <$> many1 a
 
 -- | attrPath  = [URI ":"] ATTRNAME *1subAtt
 pAttrPath :: Parser AttrPath
 pAttrPath =
   AttrPath 
-    <$> (optional pSchema <* char ':')
+    <$> (optional (pSchema <* char ':'))
     <*> pAttrName
-    <*> many1'' pSubAttr
+    <*> optional pSubAttr
 
 
 -- | subAttr   = "." ATTRNAME
@@ -161,10 +156,6 @@ pValuePath :: Parser ValuePath
 pValuePath =
   ValuePath <$> pAttrPath <*> (char '[' *> pFilter <* char ']')
 
--- | PATH = attrPath / valuePath [subAttr]
-pPath :: Parser Path
-pPath = 
-  Path <$> pAttrPath <|> SubAttrPath <$> pValuePath <*> optional pSubAttr
 
 -- Note: this parser is written with Attoparsec because I don't know how to
 -- lift an Attoparsec parser (from Aeson) to Megaparsec
@@ -207,8 +198,8 @@ pCompareOp = choice
   ]
 
 -- | Attribute name parser.
-pAttribute :: Parser Attribute
-pAttribute = choice
+pAttrName :: Parser AttrName
+pAttrName = choice
   [ AttrUserName <$ stringCI "userName"
   , AttrDisplayName <$ stringCI "displayName"
   , AttrExternalId <$ stringCI "externalId"
@@ -218,7 +209,7 @@ pAttribute = choice
 pFilter :: Parser Filter
 pFilter = choice
   [ FilterAttrCompare
-      <$> pAttribute
+      <$> pAttrPath
       <*> (skipSpace1 *> pCompareOp)
       <*> (skipSpace1 *> pCompValue)
   ]
@@ -234,7 +225,13 @@ skipSpace1 = space *> skipSpace
 renderFilter :: Filter -> Text
 renderFilter filter_ = case filter_ of
   FilterAttrCompare attr op val ->
-    rAttribute attr <> " " <> rCompareOp op <> " " <> rCompValue val
+    rAttrPath attr <> " " <> rCompareOp op <> " " <> rCompValue val
+
+-- | Rendering an attribute path
+-- TODO(arianvp): Adjust roundtrip test for this one.
+rAttrPath :: AttrPath -> Text
+rAttrPath (AttrPath schema attr subAttr) 
+  =  fromMaybe "" ((<> ":") . getSchemaUri <$> schema) <> rAttrName attr <> fromMaybe "" (rSubAttr <$> subAttr)
 
 -- | Value literal renderer.
 rCompValue :: CompValue -> Text
@@ -258,9 +255,13 @@ rCompareOp = \case
   OpLt -> "lt"
   OpLe -> "le"
 
+-- | SubAttr renderer
+rSubAttr :: SubAttr -> Text
+rSubAttr (SubAttr x) = "." <> (rAttrName x)
+
 -- | Attribute name renderer.
-rAttribute :: Attribute -> Text
-rAttribute = \case
+rAttrName :: AttrName -> Text
+rAttrName = \case
   AttrUserName -> "userName"
   AttrDisplayName -> "displayName"
   AttrExternalId -> "externalId"
@@ -272,14 +273,24 @@ rAttribute = \case
 --
 -- Returns 'Left' if the filter is constructed incorrectly (e.g. tries to
 -- compare a username with a boolean).
+-- TODO(arianvp): This function is partial in its current form? why isn't it failing?
 filterUser :: Filter -> User extra -> Either Text Bool
-filterUser filter_ user = case filter_ of
-  FilterAttrCompare AttrUserName op (ValString str) ->
-    -- Comparing usernames has to be case-insensitive; look at the
-    -- 'caseExact' parameter of the user schema
-    Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
-  FilterAttrCompare AttrUserName _ _ ->
-    Left "usernames can only be compared with strings"
+filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
+  | isUserSchema schema =
+      case (attrib, subAttr, val) of
+        (AttrUserName, Nothing, (ValString str)) ->
+          Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
+        (AttrUserName, Nothing, _) ->
+          Left "usernames can only be compared with strings"
+        (_, _, _) ->
+          Left "Only search on usernames is currently supported"
+  | otherwise = Left "Invalid schema. Only user schema is supported"
+  where 
+    -- Omission of a schema for users is implicitly the core schema
+    -- TODO(arianvp): Link to part of the spec that claims this.
+    isUserSchema Nothing = True
+    isUserSchema (Just User20) = True
+    isUserSchema _ = False
 
 -- | Execute a comparison operator.
 compareStr :: CompareOp -> Text -> Text -> Bool

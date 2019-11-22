@@ -7,8 +7,8 @@ import Data.Aeson.Types (Value, FromJSON(parseJSON), ToJSON, withObject, (.:), V
 import qualified Data.HashMap.Strict as HashMap
 import Data.Text (toLower, Text)
 import Data.Bifunctor (first)
-import Data.Attoparsec.Text (Parser)
-import Web.Scim.Filter (Path)
+import Data.Attoparsec.ByteString (Parser)
+import Web.Scim.Filter (AttrPath(..), ValuePath(..), SubAttr(..), pAttrPath, pValuePath, pSubAttr)
 
 newtype PatchOp = PatchOp
   { patchOperations :: [Operation] }
