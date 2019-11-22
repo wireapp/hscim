@@ -273,7 +273,8 @@ rAttrName = \case
 --
 -- Returns 'Left' if the filter is constructed incorrectly (e.g. tries to
 -- compare a username with a boolean).
--- TODO(arianvp): This function is partial in its current form? why isn't it failing?
+--
+-- TODO(arianvp): We need to generalise filtering at some point probably.
 filterUser :: Filter -> User extra -> Either Text Bool
 filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
   | isUserSchema schema =
