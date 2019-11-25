@@ -41,10 +41,11 @@ module Web.Scim.Filter
   , rSubAttr
   ) where
 
+import Prelude hiding (takeWhile)
 import Control.Applicative((<|>), optional)
 import Data.Scientific
-import Data.Text
-import Data.Text.Encoding
+import Data.Text (Text, cons, pack, toCaseFold, isInfixOf, isPrefixOf, isSuffixOf)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Text.Lazy (toStrict)
 import Data.Attoparsec.ByteString.Char8
 import Data.Aeson.Parser as Aeson
@@ -89,10 +90,7 @@ data CompareOp
 -- ATTRNAME  = ALPHA *(nameChar)
 -- TODO(arianvp): Actually implement the grammar here, instead of a whitelist of attributes.
 data AttrName
-  = AttrUserName
-  | AttrDisplayName
-  | AttrExternalId
-  deriving (Eq, Ord, Show, Enum, Bounded)
+  = AttrName Text deriving (Eq, Ord, Show)
 
 -- | A filter.
 --
@@ -205,11 +203,7 @@ pCompareOp = choice
 
 -- | Attribute name parser.
 pAttrName :: Parser AttrName
-pAttrName = choice
-  [ AttrUserName <$ stringCI "userName"
-  , AttrDisplayName <$ stringCI "displayName"
-  , AttrExternalId <$ stringCI "externalId"
-  ]
+pAttrName = (\c str -> AttrName (cons c (decodeUtf8 str))) <$> letter_ascii <*> takeWhile (\x -> isDigit x || isAlpha_ascii x || x == '-' || x == '_')
 
 -- | Filter parser.
 pFilter :: Parser Filter
@@ -267,10 +261,7 @@ rSubAttr (SubAttr x) = "." <> (rAttrName x)
 
 -- | Attribute name renderer.
 rAttrName :: AttrName -> Text
-rAttrName = \case
-  AttrUserName -> "userName"
-  AttrDisplayName -> "displayName"
-  AttrExternalId -> "externalId"
+rAttrName (AttrName x) = x
 
 ----------------------------------------------------------------------------
 -- Applying
@@ -282,14 +273,14 @@ rAttrName = \case
 --
 -- TODO(arianvp): We need to generalise filtering at some point probably.
 filterUser :: Filter -> User extra -> Either Text Bool
-filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
+filterUser (FilterAttrCompare (AttrPath schema (AttrName attrib) subAttr) op val) user
   | isUserSchema schema =
-      case (attrib, subAttr, val) of
-        (AttrUserName, Nothing, (ValString str)) ->
+      case (subAttr, val) of
+        (Nothing, (ValString str)) | toCaseFold attrib == toCaseFold "userName" ->
           Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
-        (AttrUserName, Nothing, _) ->
+        (Nothing, _) | toCaseFold attrib == toCaseFold "userName" ->
           Left "usernames can only be compared with strings"
-        (_, _, _) ->
+        (_, _) ->
           Left "Only search on usernames is currently supported"
   | otherwise = Left "Invalid schema. Only user schema is supported"
   where 
