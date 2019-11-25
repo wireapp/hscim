@@ -24,8 +24,8 @@ spec = do
             "schemas": [],
             "operations": []
           }|] `shouldSatisfy` (\case
-                    Success a -> False
-                    Error a -> True)
+                    Success _ -> False
+                    Error _ -> True)
       describe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
         let
           examples =

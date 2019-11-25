@@ -6,6 +6,7 @@ import           Web.Scim.Filter
 import           Web.Scim.Schema.Schema (Schema(User20, Group20))
 
 import           Test.Hspec
+import           Web.Scim.Test.Util
 import           HaskellWorks.Hspec.Hedgehog
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
@@ -14,10 +15,7 @@ import qualified Hedgehog.Range as Range
 spec :: Spec
 spec = do
   describe "Filter" $ do
-    it "parse . render === id" $ require $ property $ do
-      filter_ <- forAll genFilter
-      parseFilter (renderFilter filter_) === Right filter_
-
+    it "parse . render === id" $ require $ roundtrip renderFilter parseFilter genFilter
 ----------------------------------------------------------------------------
 -- Generators
 
