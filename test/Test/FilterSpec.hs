@@ -3,7 +3,7 @@
 module Test.FilterSpec (spec) where
 
 import           Web.Scim.Filter
-import           Web.Scim.Schema.Schema (Schema(User20))
+import           Web.Scim.Schema.Schema (Schema(User20, Group20))
 
 import           Test.Hspec
 import           HaskellWorks.Hspec.Hedgehog
@@ -13,7 +13,7 @@ import qualified Hedgehog.Range as Range
 
 spec :: Spec
 spec = do
-  context "parsing:" $ do
+  describe "Filter" $ do
     it "parse . render === id" $ require $ property $ do
       filter_ <- forAll genFilter
       parseFilter (renderFilter filter_) === Right filter_
@@ -36,18 +36,17 @@ genCompareOp :: Gen CompareOp
 genCompareOp = Gen.element
   [ minBound .. ]
 
--- TODO(arianvp): We don't support any sub-attributes currently
-genSubAttr :: Gen (Maybe SubAttr)
-genSubAttr = pure Nothing
+genSubAttr :: Gen SubAttr
+genSubAttr = SubAttr <$> genAttrName
 
 -- TODO(arianvp): We only support the core schema so far, enterprise and custom schemas
 -- will come later
 genSchema :: Gen Schema
-genSchema = pure User20
+genSchema = Gen.element [ User20, Group20 ]
  
 
 genAttrPath :: Gen AttrPath
-genAttrPath = AttrPath <$> Gen.maybe genSchema <*> genAttrName  <*> genSubAttr
+genAttrPath = AttrPath <$> Gen.maybe genSchema <*> genAttrName  <*> Gen.maybe genSubAttr
 
 genAttrName :: Gen AttrName
 genAttrName = Gen.element
