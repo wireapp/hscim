@@ -28,7 +28,7 @@ data Operation = Operation
   { op :: Op
   , path :: Path
   , value :: OperationValue
-  } deriving Show
+  } deriving (Show)
 
 -- NOTE: Azure wants us to be case-insensitive on _values_ as well here
 instance FromJSON Operation where
@@ -38,7 +38,7 @@ instance FromJSON Operation where
 data Path
   = NormalPath AttrPath 
   | IntoValuePath ValuePath (Maybe SubAttr)
-  deriving Show
+  deriving (Eq, Show)
 
 -- | PATH = attrPath / valuePath [subAttr]
 pPath :: Parser Path

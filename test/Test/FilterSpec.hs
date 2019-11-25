@@ -20,6 +20,9 @@ spec = do
 ----------------------------------------------------------------------------
 -- Generators
 
+genValuePath :: Gen ValuePath
+genValuePath  = ValuePath <$> genAttrPath <*> genFilter
+
 genCompValue :: Gen CompValue
 genCompValue = Gen.choice
   [ pure ValNull
@@ -42,7 +45,6 @@ genSubAttr = SubAttr <$> genAttrName
 -- will come later
 genSchema :: Gen Schema
 genSchema = Gen.element [ User20, Group20 ]
- 
 
 genAttrPath :: Gen AttrPath
 genAttrPath = AttrPath <$> Gen.maybe genSchema <*> genAttrName  <*> Gen.maybe genSubAttr

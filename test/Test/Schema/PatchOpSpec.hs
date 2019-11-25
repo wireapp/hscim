@@ -1,13 +1,24 @@
 {-# LANGUAGE QuasiQuotes #-}
-module Test.Schema.PatchOpSpec (spec) where
+module Test.Schema.PatchOpSpec where
 
 import Data.Foldable (for_)
 import Test.Hspec (Spec, describe, xdescribe, it, pending, shouldBe, shouldSatisfy)
-import Data.Text.Encoding (decodeUtf8)
-import Web.Scim.Test.Util (scim, post, put, patch)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Web.Scim.Test.Util (scim, post, put, patch, roundtrip)
 import Web.Scim.Schema.PatchOp
 import Data.Aeson.Types (fromJSON, Result(Success, Error))
 import Data.Attoparsec.ByteString (parseOnly)
+import HaskellWorks.Hspec.Hedgehog (require)
+import Hedgehog (Gen)
+import qualified Hedgehog.Gen as Gen
+import Test.FilterSpec (genValuePath, genAttrPath, genSubAttr, genFilter)
+
+
+genPath :: Gen Path
+genPath = Gen.choice
+  [ IntoValuePath <$> genValuePath <*> Gen.maybe genSubAttr
+  , NormalPath <$> genAttrPath
+  ]
 
 spec :: Spec
 spec = do
@@ -29,6 +40,8 @@ spec = do
                     Success _ -> False
                     Error _ -> True)
       --TODO(arianvp): We don't support arbitrary path names (yet)
+      it "roundtrips" $ do
+        require $ roundtrip (encodeUtf8 . rPath) (parseOnly pPath) genPath
       describe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
         let
           examples =
