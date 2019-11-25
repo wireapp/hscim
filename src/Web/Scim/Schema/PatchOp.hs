@@ -8,7 +8,8 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.Text (toLower, Text)
 import Data.Bifunctor (first)
 import Data.Attoparsec.ByteString (Parser)
-import Web.Scim.Filter (AttrPath(..), ValuePath(..), SubAttr(..), pAttrPath, pValuePath, pSubAttr)
+import Web.Scim.Filter (AttrPath(..), ValuePath(..), SubAttr(..), pAttrPath, pValuePath, pSubAttr, rAttrPath, rSubAttr, rValuePath)
+import Data.Maybe (fromMaybe)
 
 newtype PatchOp = PatchOp
   { patchOperations :: [Operation] }
@@ -33,15 +34,19 @@ data Operation = Operation
 instance FromJSON Operation where
   parseJSON = undefined
 
+-- | PATH = attrPath / valuePath [subAttr]
 data Path
-  = Path AttrPath 
-  | SubAttrPath ValuePath (Maybe SubAttr)
+  = NormalPath AttrPath 
+  | IntoValuePath ValuePath (Maybe SubAttr)
   deriving Show
 
 -- | PATH = attrPath / valuePath [subAttr]
 pPath :: Parser Path
-pPath = 
-  Path <$> pAttrPath <|> SubAttrPath <$> pValuePath <*> optional pSubAttr
+pPath = NormalPath <$> pAttrPath <|> IntoValuePath <$> pValuePath <*> optional pSubAttr
+
+rPath :: Path -> Text
+rPath (NormalPath attrPath) = rAttrPath attrPath
+rPath (IntoValuePath valuePath subAttr) = rValuePath valuePath <> fromMaybe "" (rSubAttr <$> subAttr)
 
 data Op
   = Add AddOp

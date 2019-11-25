@@ -36,6 +36,9 @@ module Web.Scim.Filter
   , pValuePath
   , pSubAttr
   , pFilter
+  , rAttrPath
+  , rValuePath
+  , rSubAttr
   ) where
 
 import Control.Applicative((<|>), optional)
@@ -155,6 +158,9 @@ pSubAttr = char '.' *> (SubAttr <$> pAttrName)
 pValuePath :: Parser ValuePath
 pValuePath =
   ValuePath <$> pAttrPath <*> (char '[' *> pFilter <* char ']')
+
+rValuePath :: ValuePath -> Text
+rValuePath (ValuePath attrPath filter) = rAttrPath attrPath <> "[" <> renderFilter filter <> "]"
 
 
 -- Note: this parser is written with Attoparsec because I don't know how to

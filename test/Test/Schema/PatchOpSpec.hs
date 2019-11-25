@@ -2,10 +2,12 @@
 module Test.Schema.PatchOpSpec (spec) where
 
 import Data.Foldable (for_)
-import Test.Hspec (Spec, describe, it, pending, shouldBe, shouldSatisfy)
+import Test.Hspec (Spec, describe, xdescribe, it, pending, shouldBe, shouldSatisfy)
+import Data.Text.Encoding (decodeUtf8)
 import Web.Scim.Test.Util (scim, post, put, patch)
-import Web.Scim.Schema.PatchOp (PatchOp)
+import Web.Scim.Schema.PatchOp
 import Data.Aeson.Types (fromJSON, Result(Success, Error))
+import Data.Attoparsec.ByteString (parseOnly)
 
 spec :: Spec
 spec = do
@@ -26,26 +28,17 @@ spec = do
           }|] `shouldSatisfy` (\case
                     Success _ -> False
                     Error _ -> True)
-      describe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
+      --TODO(arianvp): We don't support arbitrary path names (yet)
+      xdescribe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
         let
           examples =
-            [ ("members"
-              , undefined
-              )
-            , ("name.familyName"
-              , undefined
-              )
-            , ("addresses[type eq \"work\"]"
-              , undefined
-              )
-            , ("members[value eq \"2819c223-7f76-453a-919d-413861904646\"]"
-              , undefined
-              )
-            , ("members[value eq \"2819c223-7f76-453a-919d-413861904646\"].displayName"
-              , undefined
-              )
+            [ "members"
+            , "name.familyName"
+            , "addresses[type eq \"work\"]"
+            , "members[value eq \"2819c223-7f76-453a-919d-413861904646\"]"
+            , "members[value eq \"2819c223-7f76-453a-919d-413861904646\"].displayName"
             ]
-        for_ examples $ \(path, expected) -> it ("parses " ++ show path) $ pending -- parse path `shouldBe` expected
+        for_ examples $ \p -> it ("parses " ++ show p) $ (rPath <$> parseOnly pPath p) `shouldBe` Right (decodeUtf8 p) 
       describe "Each operation against an attribute MUST be compatible with the attribute's mutability and schema as defined in Sections 2.2 and 2.3 of [RFC7643]." $ do
         it "For example, a client MUST NOT modify an attribute that has mutability \"readOnly\" or \"immutable\"." $ pending
         it "However, a client MAY \"add\" a value to an \"immutable\" attribute if the attribute had no previous value." $ pending
