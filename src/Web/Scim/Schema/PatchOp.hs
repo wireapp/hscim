@@ -42,7 +42,9 @@ data Path
 
 -- | PATH = attrPath / valuePath [subAttr]
 pPath :: Parser Path
-pPath = NormalPath <$> pAttrPath <|> IntoValuePath <$> pValuePath <*> optional pSubAttr
+pPath = 
+  IntoValuePath <$> pValuePath <*> optional pSubAttr <|>
+  NormalPath <$> pAttrPath
 
 rPath :: Path -> Text
 rPath (NormalPath attrPath) = rAttrPath attrPath

@@ -29,7 +29,7 @@ spec = do
                     Success _ -> False
                     Error _ -> True)
       --TODO(arianvp): We don't support arbitrary path names (yet)
-      xdescribe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
+      describe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
         let
           examples =
             [ "members"
