@@ -50,7 +50,7 @@ genAttrPath :: Gen AttrPath
 genAttrPath = AttrPath <$> Gen.maybe genSchema <*> genAttrName  <*> Gen.maybe genSubAttr
 
 genAttrName :: Gen AttrName
-genAttrName = AttrName <$> (cons <$> Gen.alpha <*> Gen.text (Range.constant 0 50) (Gen.choice [Gen.alphaNum, Gen.constant '-', Gen.constant '_']))
+genAttrName = attrName <$> (cons <$> Gen.alpha <*> Gen.text (Range.constant 0 50) (Gen.choice [Gen.alphaNum, Gen.constant '-', Gen.constant '_']))
 
 genFilter :: Gen Filter
 genFilter = Gen.choice

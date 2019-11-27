@@ -1,7 +1,9 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Test.Schema.PatchOpSpec where
 
+import Data.Either (isRight)
 import Data.Foldable (for_)
+import Data.Text (Text)
 import Test.Hspec (Spec, describe, xdescribe, it, pending, shouldBe, shouldSatisfy)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Web.Scim.Test.Util (scim, post, put, patch, roundtrip)
@@ -20,6 +22,9 @@ genPath = Gen.choice
   , NormalPath <$> genAttrPath
   ]
 
+isSuccess (Success _) = True
+isSuccess (Error _) = False
+
 spec :: Spec
 spec = do
   let 
@@ -33,12 +38,10 @@ spec = do
     describe "urn:ietf:params:scim:api:messages:2.0:PatchOp" $ do
       describe "The body of each request MUST contain the \"schemas\" attribute with the URI value of \"urn:ietf:params:scim:api:messages:2.0:PatchOp\"." $ do
         it "rejects an empty schemas list" $ do
-          fromJSON @PatchOp [scim| { 
+          fromJSON @(PatchOp Text) [scim| { 
             "schemas": [],
             "operations": []
-          }|] `shouldSatisfy` (\case
-                    Success _ -> False
-                    Error _ -> True)
+          }|] `shouldSatisfy`  (not . isSuccess)
       --TODO(arianvp): We don't support arbitrary path names (yet)
       it "roundtrips" $ do
         require $ roundtrip (encodeUtf8 . rPath) (parseOnly pPath) genPath
@@ -51,7 +54,7 @@ spec = do
             , "members[value eq \"2819c223-7f76-453a-919d-413861904646\"]"
             , "members[value eq \"2819c223-7f76-453a-919d-413861904646\"].displayName"
             ]
-        for_ examples $ \p -> it ("parses " ++ show p) $ (rPath <$> parseOnly pPath p) `shouldBe` Right (decodeUtf8 p) 
+        for_ examples $ \p -> it ("parses " ++ show p) $ (rPath <$> parseOnly pPath p) `shouldSatisfy` isRight
       describe "Each operation against an attribute MUST be compatible with the attribute's mutability and schema as defined in Sections 2.2 and 2.3 of [RFC7643]." $ do
         it "For example, a client MUST NOT modify an attribute that has mutability \"readOnly\" or \"immutable\"." $ pending
         it "However, a client MAY \"add\" a value to an \"immutable\" attribute if the attribute had no previous value." $ pending

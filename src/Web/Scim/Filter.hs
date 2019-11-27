@@ -27,7 +27,8 @@ module Web.Scim.Filter
   -- * Constructing filters
   , CompValue(..)
   , CompareOp(..)
-  , AttrName(..)
+  , AttrName
+  , attrName
   , AttrPath(..)
   , ValuePath(..)
   , SubAttr(..)
@@ -44,7 +45,7 @@ module Web.Scim.Filter
 import Prelude hiding (takeWhile)
 import Control.Applicative((<|>), optional)
 import Data.Scientific
-import Data.Text (Text, cons, pack, toCaseFold, isInfixOf, isPrefixOf, isSuffixOf)
+import Data.Text (Text, cons, pack, toLower, toCaseFold, isInfixOf, isPrefixOf, isSuffixOf)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Text.Lazy (toStrict)
 import Data.Attoparsec.ByteString.Char8
@@ -91,6 +92,9 @@ data CompareOp
 -- TODO(arianvp): Actually implement the grammar here, instead of a whitelist of attributes.
 data AttrName
   = AttrName Text deriving (Eq, Ord, Show)
+
+attrName :: Text -> AttrName
+attrName = AttrName . toLower
 
 -- | A filter.
 --
@@ -202,8 +206,9 @@ pCompareOp = choice
   ]
 
 -- | Attribute name parser.
+-- NOTE: Normalizes the attribute name using Data.Text.toCaseFold
 pAttrName :: Parser AttrName
-pAttrName = (\c str -> AttrName (cons c (decodeUtf8 str))) <$> letter_ascii <*> takeWhile (\x -> isDigit x || isAlpha_ascii x || x == '-' || x == '_')
+pAttrName = (\c str -> attrName (cons c (decodeUtf8 str))) <$> letter_ascii <*> takeWhile (\x -> isDigit x || isAlpha_ascii x || x == '-' || x == '_')
 
 -- | Filter parser.
 pFilter :: Parser Filter
@@ -276,9 +281,9 @@ filterUser :: Filter -> User extra -> Either Text Bool
 filterUser (FilterAttrCompare (AttrPath schema (AttrName attrib) subAttr) op val) user
   | isUserSchema schema =
       case (subAttr, val) of
-        (Nothing, (ValString str)) | toCaseFold attrib == toCaseFold "userName" ->
+        (Nothing, (ValString str)) | attrib == "username" ->
           Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
-        (Nothing, _) | toCaseFold attrib == toCaseFold "userName" ->
+        (Nothing, _) | attrib == "username" ->
           Left "usernames can only be compared with strings"
         (_, _) ->
           Left "Only search on usernames is currently supported"

@@ -18,13 +18,8 @@
 --
 -- == Optional fields
 --
--- The spec doesn't say which fields should be optional and which shouldn't, and
--- in theory every SCIM server can decide for itself which fields it will
--- consider optional (as long as it makes it clear in the resource schema).
--- Currently we don't provide any control over this; all fields are optional
--- except for @userName@.
---
--- TODO: why @userName@?
+-- The spec only mandates the @userName@ and @id@ attribute. All other
+-- attributes seem optional.
 --
 -- == Multi-valued fields
 --
@@ -33,12 +28,20 @@
 -- opted for the latter to conform to an example in the spec:
 -- <https://tools.ietf.org/html/rfc7644#section-3.5.1>.
 --
--- == Field names
+-- TODO(arianvp):
+--  Multi-valued attributes actually have some more quirky semantics that we
+--  currently' don't support yet. E.g. if the multi-values have a
+--  'primary' field then only one of the entires must have 'primary: true'
+--  and all the others are either implied 'primary: false' or must be checked
+--  that they're false
+--
+--
+-- == Attribute names
 --
 -- When parsing JSON objects, we ignore capitalization differences in field
--- names -- e.g. both @USERNAME@ and @userName@ are accepted. This behavior is
--- not prescribed by the spec, but it allows us to work with buggy SCIM
--- implementations.
+-- names -- e.g. both @USERNAME@ and @userName@ are accepted.
+--  This is described by the spec  https://tools.ietf.org/html/rfc7643#section-2.1
+--
 module Web.Scim.Schema.User where
 
 import Data.Text (Text, toLower)
@@ -172,6 +175,12 @@ instance FromJSON (UserExtra tag) => FromJSON (User tag) where
     entitlements <- o .:? "entitlements" .!= []
     roles <- o .:? "roles" .!= []
     x509Certificates <- o .:? "x509certificates" .!= []
+
+    -- NOTE: We pass in the _original_ object. This is because
+    -- our schema URN parser is currently case-sensitive (Eventhough SCIM
+    -- mandates we should be case-insensitive).
+    -- This means we're not fully compliant here
+    -- TODO(arianvp): Think of making URN parsing case-insensitive
     extra <- parseJSON (Object obj)
     pure User{..}
 
