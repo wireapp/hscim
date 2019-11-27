@@ -21,9 +21,6 @@ module Web.Scim.Filter
   , parseFilter
   , renderFilter
 
-  -- * Filtering logic
-  , filterUser
-
   -- * Constructing filters
   , CompValue(..)
   , CompareOp(..)
@@ -38,8 +35,10 @@ module Web.Scim.Filter
   , pSubAttr
   , pFilter
   , rAttrPath
+  , rAttrName
   , rValuePath
   , rSubAttr
+  , compareStr
   ) where
 
 import Prelude hiding (takeWhile)
@@ -57,7 +56,6 @@ import Data.Maybe (fromMaybe)
 import Lens.Micro
 import Web.HttpApiData
 
-import Web.Scim.Schema.User
 import Web.Scim.Schema.Schema (Schema(User20), getSchemaUri, fromSchemaUri, pSchema)
 
 ----------------------------------------------------------------------------
@@ -268,32 +266,6 @@ rSubAttr (SubAttr x) = "." <> (rAttrName x)
 rAttrName :: AttrName -> Text
 rAttrName (AttrName x) = x
 
-----------------------------------------------------------------------------
--- Applying
-
--- | Check whether a user satisfies the filter.
---
--- Returns 'Left' if the filter is constructed incorrectly (e.g. tries to
--- compare a username with a boolean).
---
--- TODO(arianvp): We need to generalise filtering at some point probably.
-filterUser :: Filter -> User extra -> Either Text Bool
-filterUser (FilterAttrCompare (AttrPath schema (AttrName attrib) subAttr) op val) user
-  | isUserSchema schema =
-      case (subAttr, val) of
-        (Nothing, (ValString str)) | attrib == "username" ->
-          Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
-        (Nothing, _) | attrib == "username" ->
-          Left "usernames can only be compared with strings"
-        (_, _) ->
-          Left "Only search on usernames is currently supported"
-  | otherwise = Left "Invalid schema. Only user schema is supported"
-  where 
-    -- Omission of a schema for users is implicitly the core schema
-    -- TODO(arianvp): Link to part of the spec that claims this.
-    isUserSchema Nothing = True
-    isUserSchema (Just User20) = True
-    isUserSchema _ = False
 
 -- | Execute a comparison operator.
 compareStr :: CompareOp -> Text -> Text -> Bool

@@ -13,13 +13,16 @@ import Web.Scim.Filter (AttrPath(..), ValuePath(..), SubAttr(..), pAttrPath, pVa
 import Data.Maybe (fromMaybe)
 
 newtype PatchOp = PatchOp
-  { patchOperations :: [Operation] }
+  { getOperations :: [Operation] }
   deriving Show
     
-
+-- TODO(arianvp):  When value is an array, it needs special handling.
+-- e.g. primary fields need to be negated and whatnot. 
+-- We currently do not do that :)
 data Operation = Operation
   { op :: Op 
-  , value :: OperationValue
+  , path :: Maybe Path
+  , value :: Value
   } deriving (Show)
 
 -- The "path" attribute value is a String containing an attribute path
@@ -27,18 +30,19 @@ data Operation = Operation
 -- for "add" and "replace" and is REQUIRED for "remove operations.  See
 -- relevant operation sections below for details.
 data Op
-  = Add (Maybe Path)
-  | Replace (Maybe Path)
-  | Remove Path
+  = Add
+  | Replace 
+  | Remove
   deriving Show
 
+instance FromJSON Op where
+  parseJSON = withText "Op" $ \op' ->
+    case op' of
+      "add" -> pure Add
+      "replace" -> pure Replace
+      "remove" -> pure Remove
+      _ -> fail "unknown operation"
 
-
-data OperationValue 
-  = Singular Value
-  | MultiValue Value 
-  deriving Show
-  
 -- | PATH = attrPath / valuePath [subAttr]
 data Path
   = NormalPath AttrPath 
@@ -49,9 +53,6 @@ instance  FromJSON Path where
   parseJSON = withText "Path" $ \path -> case parseOnly pPath (encodeUtf8 path) of
     Left x -> fail x
     Right x -> pure x
-
-instance FromJSON OperationValue where
-  parseJSON = undefined
 
 -- | PATH = attrPath / valuePath [subAttr]
 pPath :: Parser Path
@@ -77,13 +78,7 @@ instance FromJSON PatchOp where
 instance FromJSON Operation where
   parseJSON = withObject "Operation" $ \v -> do
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
-    op' <- o .: "op" >>= \x -> case toLower x of
-      "add" -> Add <$> optional (o .: "path")
-      "remove" -> Remove <$> (o .: "path")
-      "replace" -> Replace <$> optional (o .: "path")
-      _ -> fail $ "Unsupported patch operation"
-    val <- o .: "value"
-    pure $ Operation op' val
+    Operation <$> (o .: "op") <*> (o .: "path") <*> (o .: "value")
 
     
 

@@ -9,6 +9,7 @@ module Web.Scim.Class.User
 
 import           GHC.Generics (Generic)
 import           Web.Scim.Schema.User
+import           Web.Scim.Schema.PatchOp
 import           Web.Scim.Schema.Meta
 import           Web.Scim.Schema.Common
 import           Web.Scim.Schema.ListResponse hiding (schemas)
@@ -19,8 +20,6 @@ import           Web.Scim.Class.Auth
 import           Servant
 import           Servant.API.Generic
 import           Servant.Server.Generic
-
-import qualified Data.Aeson as Aeson
 
 ----------------------------------------------------------------------------
 -- /Users API
@@ -43,12 +42,13 @@ data UserSite tag route = UserSite
       Put '[SCIM] (StoredUser tag)
   , usPatchUser :: route :-
       Capture "id" (UserId tag) :>
-      ReqBody '[SCIM] Aeson.Value :>
+      ReqBody '[SCIM] PatchOp :>
       Patch '[SCIM] (StoredUser tag)
   , usDeleteUser :: route :-
       Capture "id" (UserId tag) :>
       DeleteNoContent '[SCIM] NoContent
   } deriving (Generic)
+
 
 ----------------------------------------------------------------------------
 -- Methods used by the API
@@ -80,6 +80,8 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
   --
   -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if uniqueness
   -- constraints are violated.
+  --
+  -- 
   putUser
     :: AuthInfo tag
     -> UserId tag
@@ -90,14 +92,21 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
   --
   -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if uniqueness
   -- constraints are violated.
-  --
-  -- FUTUREWORK: add types for PATCH (instead of 'Aeson.Value').
-  -- See <https://tools.ietf.org/html/rfc7644#section-3.5.2>
+  --   o  If the target location already contains the value specified, no
+  --      changes SHOULD be made to the resource, and a success response
+  --      SHOULD be returned.  Unless other operations change the resource,
+  --      this operation SHALL NOT change the modify timestamp of the
+  --      resource.
   patchUser
     :: AuthInfo tag
     -> UserId tag
-    -> Aeson.Value  -- ^ PATCH payload
+    -> PatchOp  -- ^ PATCH payload
     -> ScimHandler m (StoredUser tag)
+
+  patchUser info uid op = do
+    user <- getUser info uid
+    (newUser, tainted) <- applyPatch op user
+    putUser info uid newUser
 
   -- | Delete a user.
   --

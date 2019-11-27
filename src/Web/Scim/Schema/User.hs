@@ -44,13 +44,16 @@
 --
 module Web.Scim.Schema.User where
 
-import Data.Text (Text, toLower)
+import Control.Monad (foldM)
+import Data.Text (Text, toLower, toCaseFold)
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import Lens.Micro
 
+import Web.Scim.Filter (Filter(..), AttrPath(..), rAttrName, compareStr, AttrName, CompValue(..))
 import Web.Scim.Schema.Common
 import Web.Scim.Schema.Schema (Schema(..))
+import Web.Scim.Schema.PatchOp (PatchOp, Op(..), Operation(Operation), getOperations)
 import Web.Scim.Schema.User.Address (Address)
 import Web.Scim.Schema.User.Certificate (Certificate)
 import Web.Scim.Schema.User.Email (Email)
@@ -58,6 +61,7 @@ import Web.Scim.Schema.User.IM (IM)
 import Web.Scim.Schema.User.Name (Name)
 import Web.Scim.Schema.User.Phone (Phone)
 import Web.Scim.Schema.User.Photo (Photo)
+import Web.Scim.Schema.Error
 
 import GHC.Generics (Generic)
 
@@ -235,3 +239,72 @@ instance FromJSON NoUserExtra where
 
 instance ToJSON NoUserExtra where
   toJSON _ = object []
+
+----------------------------------------------------------------------------
+-- Applying
+
+-- | Applies a JSON Patch to a SCIM Core User
+-- Only supports the core attributes. 
+-- Evenmore, only some hand-picked ones currently.
+-- We'll have to think how patch is going to work in the presence of extensions.
+-- Also, we can probably make  PatchOp type-safe to some extent (Read arianvp's thesis :))
+--
+applyPatch :: User tag  -> PatchOp -> Either ScimError (User tag)
+applyPatch = (. getOperations) . foldM applyOperation
+
+applyOperation :: User tag  -> Operation -> Either ScimError (User tag)
+applyOperation user (Operation op path value) =
+  case op of
+    Add ->
+      case path of
+         -- o If omitted, the target location is assumed to be the resource
+         --   itself.  The "value" parameter contains a set of attributes to be
+         --   added to the resource.
+        Nothing ->
+          case value of
+            Object o -> _
+            _ -> Left undefined
+            
+        Just path ->
+          -- o  If the target location does not exist, the attribute and value are
+          --      added.
+          --
+          --   NOTE(arianvp): Add a test for this. This sounds important.
+          --   Currently in Spar, this constraint is fulfilled by the fact
+          --   that PUT does this already and our PATCH is implemented in terms of PUT.
+          --   TODO(arianvp): It would be nicer if this updating of the modified metadata
+          --    is pushed to the library level instead though!
+          --   o  If the target location already contains the value specified, no
+          --      changes SHOULD be made to the resource, and a success response
+          --      SHOULD be returned.  Unless other operations change the resource,
+          --      this operation SHALL NOT change the modify timestamp of the
+          --      resource.
+          _
+           
+    Replace -> _
+    Remove -> _
+
+
+-- | Check whether a user satisfies the filter.
+--
+-- Returns 'Left' if the filter is constructed incorrectly (e.g. tries to
+-- compare a username with a boolean).
+--
+-- TODO(arianvp): We need to generalise filtering at some point probably.
+filterUser :: Filter -> User extra -> Either Text Bool
+filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
+  | isUserSchema schema =
+      case (subAttr, val) of
+        (Nothing, (ValString str)) | rAttrName attrib == "username" ->
+          Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
+        (Nothing, _) | rAttrName attrib == "username" ->
+          Left "usernames can only be compared with strings"
+        (_, _) ->
+          Left "Only search on usernames is currently supported"
+  | otherwise = Left "Invalid schema. Only user schema is supported"
+  where 
+    -- Omission of a schema for users is implicitly the core schema
+    -- TODO(arianvp): Link to part of the spec that claims this.
+    isUserSchema Nothing = True
+    isUserSchema (Just User20) = True
+    isUserSchema _ = False
