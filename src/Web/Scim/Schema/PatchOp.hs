@@ -3,21 +3,22 @@ module Web.Scim.Schema.PatchOp where
 import Control.Applicative
 import Control.Monad (guard)
 import Web.Scim.Schema.Schema (Schema(PatchOp20), getSchemaUri,fromSchemaUri)
-import Data.Aeson.Types (Value, FromJSON(parseJSON), ToJSON, withObject, (.:), Value)
+import Data.Aeson.Types (Value, withText, FromJSON(parseJSON), ToJSON, withObject, (.:), Value)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Text (toLower, Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Bifunctor (first)
-import Data.Attoparsec.ByteString (Parser)
+import Data.Attoparsec.ByteString (Parser, parseOnly)
 import Web.Scim.Filter (AttrPath(..), ValuePath(..), SubAttr(..), pAttrPath, pValuePath, pSubAttr, rAttrPath, rSubAttr, rValuePath)
 import Data.Maybe (fromMaybe)
 
-newtype PatchOp path = PatchOp
-  { patchOperations :: [Operation path] }
+newtype PatchOp = PatchOp
+  { patchOperations :: [Operation] }
   deriving Show
     
 
-data Operation path = Operation
-  { op :: Op path
+data Operation = Operation
+  { op :: Op 
   , value :: OperationValue
   } deriving (Show)
 
@@ -25,10 +26,10 @@ data Operation path = Operation
 -- describing the target of the operation.  The "path" attribute is OPTIONAL
 -- for "add" and "replace" and is REQUIRED for "remove operations.  See
 -- relevant operation sections below for details.
-data Op path
-  = Add (Maybe path)
-  | Replace (Maybe path)
-  | Remove path
+data Op
+  = Add (Maybe Path)
+  | Replace (Maybe Path)
+  | Remove Path
   deriving Show
 
 
@@ -37,6 +38,17 @@ data OperationValue
   = Singular Value
   | MultiValue Value 
   deriving Show
+  
+-- | PATH = attrPath / valuePath [subAttr]
+data Path
+  = NormalPath AttrPath 
+  | IntoValuePath ValuePath (Maybe SubAttr)
+  deriving (Eq, Show)
+
+instance  FromJSON Path where
+  parseJSON = withText "Path" $ \path -> case parseOnly pPath (encodeUtf8 path) of
+    Left x -> fail x
+    Right x -> pure x
 
 instance FromJSON OperationValue where
   parseJSON = undefined
@@ -52,7 +64,7 @@ rPath (NormalPath attrPath) = rAttrPath attrPath
 rPath (IntoValuePath valuePath subAttr) = rValuePath valuePath <> fromMaybe "" (rSubAttr <$> subAttr)
 
 
-instance FromJSON (PatchOp Text) where
+instance FromJSON PatchOp where
   parseJSON = withObject "PatchOp" $ \v -> do
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
     schemas :: [Schema] <- o .: "schemas"
@@ -62,23 +74,17 @@ instance FromJSON (PatchOp Text) where
 
 
 -- NOTE: Azure wants us to be case-insensitive on _values_ as well here
-instance FromJSON (Operation Text) where
+instance FromJSON Operation where
   parseJSON = withObject "Operation" $ \v -> do
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
-    op <- o .: "op"
-    op' <- case toLower op of
+    op' <- o .: "op" >>= \x -> case toLower x of
       "add" -> Add <$> optional (o .: "path")
       "remove" -> Remove <$> (o .: "path")
       "replace" -> Replace <$> optional (o .: "path")
-    value <- o .: "value"
-    pure $ Operation op' value
+      _ -> fail $ "Unsupported patch operation"
+    val <- o .: "value"
+    pure $ Operation op' val
 
     
-
--- | PATH = attrPath / valuePath [subAttr]
-data Path
-  = NormalPath AttrPath 
-  | IntoValuePath ValuePath (Maybe SubAttr)
-  deriving (Eq, Show)
 
 
