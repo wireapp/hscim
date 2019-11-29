@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | A query might specify a filter that should be applied to the results
 -- before returning them. This module implements a very limited subset of
 -- the specification: <https://tools.ietf.org/html/rfc7644#section-3.4.2.2>.
@@ -41,6 +42,7 @@ module Web.Scim.Filter
   , compareStr
   ) where
 
+import Data.String
 import Prelude hiding (takeWhile)
 import Control.Applicative((<|>), optional)
 import Data.Scientific
@@ -53,7 +55,7 @@ import Data.Aeson.Text as Aeson
 import Data.Aeson as Aeson
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe)
-import Lens.Micro
+import Lens.Micro 
 import Web.HttpApiData
 
 import Web.Scim.Schema.Schema (Schema(User20), getSchemaUri, fromSchemaUri, pSchema)
@@ -88,8 +90,11 @@ data CompareOp
 --
 -- ATTRNAME  = ALPHA *(nameChar)
 -- TODO(arianvp): Actually implement the grammar here, instead of a whitelist of attributes.
-data AttrName
+newtype AttrName
   = AttrName Text deriving (Eq, Ord, Show)
+
+instance IsString AttrName where
+  fromString = attrName . fromString
 
 attrName :: Text -> AttrName
 attrName = AttrName . toLower
@@ -118,8 +123,8 @@ data ValuePath  = ValuePath AttrPath Filter
   deriving (Eq, Show)
 
 -- | subAttr   = "." ATTRNAME
-data SubAttr = SubAttr AttrName
-  deriving (Eq, Show)
+newtype SubAttr = SubAttr AttrName
+  deriving (Eq, Show, IsString)
 
 -- | attrPath  = [URI ":"] ATTRNAME *1subAtt
 data AttrPath = AttrPath (Maybe Schema) AttrName (Maybe SubAttr)

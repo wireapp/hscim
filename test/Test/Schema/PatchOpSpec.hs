@@ -38,7 +38,7 @@ spec = do
     describe "urn:ietf:params:scim:api:messages:2.0:PatchOp" $ do
       describe "The body of each request MUST contain the \"schemas\" attribute with the URI value of \"urn:ietf:params:scim:api:messages:2.0:PatchOp\"." $ do
         it "rejects an empty schemas list" $ do
-          fromJSON @(PatchOp Text) [scim| { 
+          fromJSON @PatchOp [scim| { 
             "schemas": [],
             "operations": []
           }|] `shouldSatisfy`  (not . isSuccess)

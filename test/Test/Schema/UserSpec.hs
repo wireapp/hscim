@@ -12,7 +12,7 @@ import           Web.Scim.Schema.User.Address as Address
 import           Web.Scim.Schema.User.Certificate as Certificate
 import           Web.Scim.Schema.User.Email as Email
 import           Web.Scim.Schema.User.IM as IM
-import           Web.Scim.Schema.User.Name as Name
+import           Web.Scim.Schema.User.Name as Name hiding (empty)
 import           Web.Scim.Schema.User.Phone as Phone
 import           Web.Scim.Schema.User.Photo as Photo
 import           Data.Aeson

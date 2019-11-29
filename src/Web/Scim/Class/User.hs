@@ -81,6 +81,12 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
   -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if uniqueness
   -- constraints are violated.
   --
+  -- TODO(arianvp): The spec allows to to MAY tread fields that are unassigned as
+  -- explicitly set to zero (removed). We are gonna use that assumptions as
+  -- that makes PATCH implementable in terms of PUT. This means that an
+  -- implementor of this typeclass should not interpret Nothing as "ignore"
+  -- but always as "remove"
+  --
   -- 
   putUser
     :: AuthInfo tag
@@ -103,10 +109,10 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
     -> PatchOp  -- ^ PATCH payload
     -> ScimHandler m (StoredUser tag)
 
-  patchUser info uid op = do
+  patchUser info uid op = undefined {-do
     user <- getUser info uid
     (newUser, tainted) <- applyPatch op user
-    putUser info uid newUser
+    putUser info uid newUser-}
 
   -- | Delete a user.
   --

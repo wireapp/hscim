@@ -1,6 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | SCIM user representation.
 --
@@ -44,16 +46,18 @@
 --
 module Web.Scim.Schema.User where
 
+import Data.Proxy
+import Data.Dynamic
 import Control.Monad (foldM)
 import Data.Text (Text, toLower, toCaseFold)
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
-import Lens.Micro
+import Lens.Micro 
 
 import Web.Scim.Filter (Filter(..), AttrPath(..), rAttrName, compareStr, AttrName, CompValue(..))
 import Web.Scim.Schema.Common
 import Web.Scim.Schema.Schema (Schema(..))
-import Web.Scim.Schema.PatchOp (PatchOp, Op(..), Operation(Operation), getOperations)
+import Web.Scim.Schema.PatchOp (Path(..), PatchOp, Op(..), Operation(Operation), getOperations)
 import Web.Scim.Schema.User.Address (Address)
 import Web.Scim.Schema.User.Certificate (Certificate)
 import Web.Scim.Schema.User.Email (Email)
@@ -62,6 +66,7 @@ import Web.Scim.Schema.User.Name (Name)
 import Web.Scim.Schema.User.Phone (Phone)
 import Web.Scim.Schema.User.Photo (Photo)
 import Web.Scim.Schema.Error
+import Web.Scim.Class.Patch
 
 import GHC.Generics (Generic)
 
@@ -118,10 +123,33 @@ data User tag = User
   -- FUTUREWORK: make it easy for hscim users to implement a proper parser (with correct
   -- rendering of optional and multivalued fields, lowercase objects, etc).
   , extra :: UserExtra tag
-  } deriving (Generic)
+  } deriving (Generic, Typeable)
 
 deriving instance Show (UserExtra tag) => Show (User tag)
 deriving instance Eq (UserExtra tag) => Eq (User tag)
+
+instance PathLens (User tag) where
+  pathLens (AttrPath schema attrName subAttr) =
+    -- TODO(arianvp): Support all fields
+    -- FUTUREWORK(arianvp): Generate this with Generics. This is purely mechanical
+    case attrName of
+      "username" -> pure $ GetSet userName (\x value -> pure $ x { userName = value})
+      "displayname" -> pure $ GetSet displayName (\x value -> pure $ x { displayName = value})
+      "externalid" -> pure $ GetSet externalId (\x value -> pure $ x { externalId = value})
+      -- Example of how to set a nested field
+      "name" ->
+        case subAttr of
+          Nothing -> pure $ GetSet name (\x value -> pure $ x { name = value })
+          Just x -> do
+            GetSet getX setX <- subAttrLens x
+            pure $ GetSet (getX . name) $ \y value -> do
+              value' <- setX (name y) value
+              pure $ y { name = value' }
+      -- unsupported fields do not modify the user for now.  TODO(arianvp): there shouldn't be unsupported fields
+      -- TODO(arianvp) implement
+      _ -> undefined
+
+
 
 empty
   :: [Schema]               -- ^ Schemas
@@ -151,6 +179,7 @@ empty schemas extra = User
   , x509Certificates = []
   , extra = extra
   }
+
 
 instance FromJSON (UserExtra tag) => FromJSON (User tag) where
   parseJSON = withObject "User" $ \obj -> do
@@ -249,23 +278,42 @@ instance ToJSON NoUserExtra where
 -- We'll have to think how patch is going to work in the presence of extensions.
 -- Also, we can probably make  PatchOp type-safe to some extent (Read arianvp's thesis :))
 --
+--
+
 applyPatch :: User tag  -> PatchOp -> Either ScimError (User tag)
 applyPatch = (. getOperations) . foldM applyOperation
 
-applyOperation :: User tag  -> Operation -> Either ScimError (User tag)
-applyOperation user (Operation op path value) =
+
+-- TODO(arianvp): support multi-valuued and complex attributes.
+-- TODO(arianvp): Actually do this in some kind of type-safe way. e.g.
+-- have a UserPatch type
+--
+-- What I understand from the spec:  The difference between add an replace is only
+-- in the fact that replace will not concat multi-values, and behaves differently for complex values too.
+-- For simple attributes, add and replace are identical
+applyOperation :: forall tag. User tag  -> Operation -> Either ScimError (User tag)
+applyOperation user (Operation op path value) = 
   case op of
     Add ->
-      case path of
+      let
+        kvToPath :: (Text, Value) -> Path
+        kvToPath = undefined
+        applyAdd :: User tag -> Path -> Either ScimError (User tag)
+        applyAdd u (NormalPath attrPath) = undefined
+        applyAdd u (IntoValuePath _ _)  = Left undefined -- no value paths supported yet
+
+      in case path of
          -- o If omitted, the target location is assumed to be the resource
          --   itself.  The "value" parameter contains a set of attributes to be
          --   added to the resource.
+         --
         Nothing ->
           case value of
-            Object o -> _
-            _ -> Left undefined
+            Object o -> undefined
+              --foldM _ user (HM.toList o)
+            _ -> Left undefined -- probably throw some error
             
-        Just path ->
+        Just path -> applyAdd user path
           -- o  If the target location does not exist, the attribute and value are
           --      added.
           --
@@ -279,10 +327,11 @@ applyOperation user (Operation op path value) =
           --      SHOULD be returned.  Unless other operations change the resource,
           --      this operation SHALL NOT change the modify timestamp of the
           --      resource.
-          _
-           
-    Replace -> _
-    Remove -> _
+    Replace ->
+      case path of
+       Nothing -> undefined
+       Just path -> undefined
+    Remove -> undefined
 
 
 -- | Check whether a user satisfies the filter.
@@ -302,9 +351,9 @@ filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
         (_, _) ->
           Left "Only search on usernames is currently supported"
   | otherwise = Left "Invalid schema. Only user schema is supported"
-  where 
-    -- Omission of a schema for users is implicitly the core schema
-    -- TODO(arianvp): Link to part of the spec that claims this.
-    isUserSchema Nothing = True
-    isUserSchema (Just User20) = True
-    isUserSchema _ = False
+
+-- Omission of a schema for users is implicitly the core schema
+-- TODO(arianvp): Link to part of the spec that claims this.
+isUserSchema Nothing = True
+isUserSchema (Just User20) = True
+isUserSchema _ = False
