@@ -129,6 +129,17 @@ deriving instance Show (UserExtra tag) => Show (User tag)
 deriving instance Eq (UserExtra tag) => Eq (User tag)
 
 instance PathLens (User tag) where
+  removeAttr (AttrPath schema attrName subAttr) user =
+    case attrName of
+      "username" -> Left (badRequest Mutability Nothing)
+      "displayName" -> pure $ user { displayName = Nothing}
+      "externalId" -> pure $ user { externalId = Nothing}
+      "name" ->
+        case subAttr of
+          Nothing -> pure $ user { name = Nothing}
+          Just x -> do
+            name' <- removeSubAttr x (name user)
+            pure $ user { name = name' }
   pathLens (AttrPath schema attrName subAttr) =
     -- TODO(arianvp): Support all fields
     -- FUTUREWORK(arianvp): Generate this with Generics. This is purely mechanical
@@ -291,28 +302,28 @@ applyPatch = (. getOperations) . foldM applyOperation
 -- What I understand from the spec:  The difference between add an replace is only
 -- in the fact that replace will not concat multi-values, and behaves differently for complex values too.
 -- For simple attributes, add and replace are identical
-applyOperation :: forall tag. User tag  -> Operation -> Either ScimError (User tag)
-applyOperation user (Operation op path value) = 
-  case op of
-    Add ->
-      let
-        kvToPath :: (Text, Value) -> Path
-        kvToPath = undefined
-        applyAdd :: User tag -> Path -> Either ScimError (User tag)
-        applyAdd u (NormalPath attrPath) = undefined
-        applyAdd u (IntoValuePath _ _)  = Left undefined -- no value paths supported yet
 
-      in case path of
+resultToScimError :: Result a -> Either ScimError a
+resultToScimError = undefined
+applyOperation :: forall tag. User tag  -> Operation -> Either ScimError (User tag)
+applyOperation user (Operation op path mValue) = 
+  let
+    applyAdd :: User tag -> Path ->  Either ScimError (User tag)
+    applyAdd u (NormalPath attrPath) = do
+      value <- maybe (Left undefined) pure mValue
+      GetSet get set <- pathLens attrPath
+      x <- resultToScimError $ fromJSON value
+      set user x
+    applyAdd u (IntoValuePath _ _)  = Left undefined -- no value paths supported yet
+  in case op of
+    Add ->
+      case path of
          -- o If omitted, the target location is assumed to be the resource
          --   itself.  The "value" parameter contains a set of attributes to be
          --   added to the resource.
          --
-        Nothing ->
-          case value of
-            Object o -> undefined
-              --foldM _ user (HM.toList o)
-            _ -> Left undefined -- probably throw some error
-            
+        Nothing -> undefined -- TODO(arianvp):
+ 
         Just path -> applyAdd user path
           -- o  If the target location does not exist, the attribute and value are
           --      added.
@@ -330,8 +341,16 @@ applyOperation user (Operation op path value) =
     Replace ->
       case path of
        Nothing -> undefined
-       Just path -> undefined
-    Remove -> undefined
+       -- TODO(arianvp): Add and replace are identical at the moment.
+       Just path -> applyAdd user path
+    Remove -> do
+      case path of
+        Just (NormalPath attrPath) -> do
+          removeAttr attrPath user 
+        Just (IntoValuePath _ _) -> Left undefined
+        Nothing -> Left $ badRequest NoTarget Nothing
+
+      
 
 
 -- | Check whether a user satisfies the filter.

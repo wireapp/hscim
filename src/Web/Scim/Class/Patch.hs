@@ -35,21 +35,25 @@
 -- but SCIM patches are quite different from json patches
 module Web.Scim.Class.Patch where
 import Data.Text
-import Data.Aeson.Types
 import Data.Dynamic
+import Data.Aeson.Types
+import Web.Scim.Schema.Error
 import Control.Applicative ((<$>), pure)
 import Web.Scim.Schema.PatchOp (Path(..))
 import Web.Scim.Filter
 import Data.Proxy
 
-data GetSet s = forall v. (FromJSON v) => GetSet (s -> v) (s -> v -> Result s)
+-- TODO(arianvp): Add a clear field
+data GetSet s = forall v. (Typeable v, FromJSON v, ToJSON v) => GetSet (s -> v) (s -> v -> Either ScimError s)
 
 -- TODO(arianvp):  We need a MultiValue lens as well, that allows us to peek into lists.
 class SubAttrLens s where
-  subAttrLens :: SubAttr -> Result (GetSet s)
+  subAttrLens :: SubAttr -> Either ScimError (GetSet s)
+  removeSubAttr :: SubAttr -> s -> Either ScimError s
   
 class PathLens s where
   -- | Map a key to a getter and setter on the given data.
-  pathLens :: AttrPath  -> Result (GetSet s)
+  pathLens :: AttrPath  -> Either ScimError (GetSet s)
+  removeAttr :: AttrPath -> s -> Either ScimError s
 
 

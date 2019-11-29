@@ -22,7 +22,7 @@ newtype PatchOp = PatchOp
 data Operation = Operation
   { op :: Op 
   , path :: Maybe Path
-  , value :: Value
+  , value :: Maybe Value
   } deriving (Show)
 
 -- The "path" attribute value is a String containing an attribute path
