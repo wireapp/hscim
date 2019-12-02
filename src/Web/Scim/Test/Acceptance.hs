@@ -4,7 +4,7 @@
 module Web.Scim.Test.Acceptance where
 
 import Web.Scim.Test.Util (scim, get', post', patch', delete')
-import Test.Hspec (Spec, it, beforeAll, pending, describe,)
+import Test.Hspec (Spec, it, shouldBe, beforeAll, pending, describe,)
 import Test.Hspec.Wai (shouldRespondWith,  matchStatus)
 import Network.Wai (Application)
 
@@ -13,20 +13,34 @@ import Network.Wai (Application)
 microsoftAzure :: IO Application -> Spec
 microsoftAzure app = do
   describe "Within the SCIM 2.0 protocol specification, your application must meet these requirements:" $ do
-    it "Supports creating users, and optionally also groups, as per section 3.3 of the SCIM protocol." $ pending
-    it "Supports modifying users or groups with PATCH requests, as per section 3.5.2 of the SCIM protocol." $ pending
-    it "Supports retrieving a known resource for a user or group created earlier, as per section 3.4.1 of the SCIM protocol." $ pending
+    it "Supports creating users, and optionally also groups, as per section 3.3 of the SCIM protocol." $ pending -- TODO(arianvp): Write test
+    it "Supports modifying users or groups with PATCH requests, as per section 3.5.2 of the SCIM protocol." $ pending -- TODO(arianvp): Write test
+    it "Supports retrieving a known resource for a user or group created earlier, as per section 3.4.1 of the SCIM protocol." $ pending -- TODO(arianvp): Write test
     it "Supports querying users or groups, as per section 3.4.2 of the SCIM protocol. By default, users are retrieved by their id and queried by their username and externalid, and groups are queried by displayName." $ pending
-    it "Supports querying user by ID and by manager, as per section 3.4.2 of the SCIM protocol." $ pending
-    it "Supports querying groups by ID and by member, as per section 3.4.2 of the SCIM protocol." $ pending
-    it "Accepts a single bearer token for authentication and authorization of Azure AD to your application." $ pending
+    describe "Supports querying user by ID and by manager, as per section 3.4.2 of the SCIM protocol." $ do
+      it "query by id" $ pending -- TODO(arianvp): Write test
+      it "query by manager" $ pending -- TODO(arianvp): Implement support for enterprise extension
+    it "Supports querying groups by ID and by member, as per section 3.4.2 of the SCIM protocol." $ pending -- TODO(arianvp): Implement groups
+    it "Accepts a single bearer token for authentication and authorization of Azure AD to your application." $ pending -- TODO(arianvp): Write test
 
   describe "Follow these general guidelines when implementing a SCIM endpoint to ensure compatibility with Azure AD:" $ do
-    it "id is a required property for all the resources. Every response that returns a resource should ensure each resource has this property, except for ListResponse with zero members." $ pending
-    it "Response to a query/filter request should always be a ListResponse." $ pending
-    it "Groups are optional, but only supported if the SCIM implementation supports PATCH requests." $ pending
-    it "Don't require a case-sensitive match on structural elements in SCIM, in particular PATCH op operation values, as defined in https://tools.ietf.org/html/rfc7644#section-3.5.2. Azure AD emits the values of 'op' as Add, " $ pending
-    it "Microsoft Azure AD only uses the following operators: eq and" $ pending
+    it "id is a required property for all the resources. Every response that returns a resource should ensure each resource has this property, except for ListResponse with zero members." $
+      -- NOTE: This is guaranteed by the type-system. No need for a test
+      True `shouldBe` True
+    it "Response to a query/filter request should always be a ListResponse." $
+      -- NOTE: This is guaranteed by the type-system. No need for a test
+      True `shouldBe` True
+    it "Groups are optional, but only supported if the SCIM implementation supports PATCH requests." $ 
+      -- TODO(arianvp): Implement groups
+      True `shouldBe` True
+    it "Don't require a case-sensitive match on structural elements in SCIM, in particular PATCH op operation values, as defined in https://tools.ietf.org/html/rfc7644#section-3.5.2. Azure AD emits the values of 'op' as Add, " $ 
+      -- TODO(arianvp): Write test
+      pending
+    describe "Microsoft Azure AD only uses the following operators: eq and" $ do
+      -- TODO(arianvp): Write test
+      it "eq" $ pending
+      -- TODO(arianvp): Implement 'and' as Azure needs it
+      it "and" $ pending
 
   beforeAll app $ do
     describe "User Operations" $ do
@@ -98,7 +112,7 @@ microsoftAzure app = do
                             "value": "5b50642d-79fc-4410-9e90-4c077cdd1a59@testuser.com"
                     }]
             }
-          |] `shouldRespondWith` "" { matchStatus = 200  }
+          |] `shouldRespondWith` 200
           -- TODO match body
       it "Delete User" $ do
         delete' "/Users/0" "" `shouldRespondWith` 204

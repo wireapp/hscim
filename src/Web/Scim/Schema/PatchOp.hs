@@ -5,7 +5,7 @@ import Control.Monad (guard)
 import Web.Scim.Schema.Schema (Schema(PatchOp20))
 import Data.Aeson.Types (Value, withText, FromJSON(parseJSON), withObject, (.:), Value)
 import qualified Data.HashMap.Strict as HashMap
-import Data.Text (toLower, Text)
+import Data.Text (toCaseFold, toLower, Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Bifunctor (first)
 import Data.Attoparsec.ByteString (Parser, parseOnly)
@@ -19,6 +19,9 @@ newtype PatchOp = PatchOp
 -- TODO(arianvp):  When value is an array, it needs special handling.
 -- e.g. primary fields need to be negated and whatnot. 
 -- We currently do not do that :)
+--
+-- NOTE: When the path contains a schema, this schema must be implicitly added
+-- to the list of schemas on the result type
 data Operation = Operation
   { op :: Op 
   , path :: Maybe Path

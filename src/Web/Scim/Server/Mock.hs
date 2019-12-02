@@ -108,8 +108,6 @@ instance UserDB Mock TestServer where
         liftSTM $ STMMap.insert newUser uid m
         pure newUser
 
-  patchUser _ _ _ = throwScim (serverError "PATCH /Users not implemented")
-
   deleteUser () uid = do
     m <- userDB <$> ask
     liftSTM (STMMap.lookup uid m) >>= \case
