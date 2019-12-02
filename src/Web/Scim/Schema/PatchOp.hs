@@ -37,7 +37,7 @@ data Op
 
 instance FromJSON Op where
   parseJSON = withText "Op" $ \op' ->
-    case op' of
+    case toCaseFold op' of
       "add" -> pure Add
       "replace" -> pure Replace
       "remove" -> pure Remove
