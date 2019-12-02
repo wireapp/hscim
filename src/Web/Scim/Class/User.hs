@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Web.Scim.Class.User
     ( UserDB (..)
@@ -7,6 +8,7 @@ module Web.Scim.Class.User
     , userServer
     ) where
 
+import           Data.Aeson.Types (FromJSON)
 import           GHC.Generics (Generic)
 import           Web.Scim.Schema.User
 import           Web.Scim.Schema.PatchOp
@@ -103,16 +105,27 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
   --      SHOULD be returned.  Unless other operations change the resource,
   --      this operation SHALL NOT change the modify timestamp of the
   --      resource.
+  --
+  --  Given that PUT has the same constraints, we can implement
+  --  PATCH in terms of some magic in this library, GET and PUT.
+  --
+  --  SCIM's Patch semantics are hard to get right. So we advice using the library
+  --  built-in implementation.
   patchUser
     :: AuthInfo tag
     -> UserId tag
     -> PatchOp  -- ^ PATCH payload
     -> ScimHandler m (StoredUser tag)
-
-  patchUser info uid op = undefined {-do
-    user <- getUser info uid
-    (newUser, tainted) <- applyPatch op user
-    putUser info uid newUser-}
+  default patchUser 
+    :: FromJSON (UserExtra tag)
+    => AuthInfo tag
+    -> UserId tag
+    -> PatchOp  -- ^ PATCH payload
+    -> ScimHandler m (StoredUser tag)
+  patchUser info uid op' = do
+    (WithMeta _ (WithId _ (user :: User tag))) <- getUser info uid
+    (newUser :: User tag) <- applyPatch user op'
+    putUser info uid newUser
 
   -- | Delete a user.
   --
@@ -143,7 +156,7 @@ userServer authData = UserSite
       putUser @tag auth uid user
   , usPatchUser = \uid patch -> do
       auth <- authCheck @tag authData
-      patchUser @tag auth uid patch
+      patchUser @tag @m auth uid patch
   , usDeleteUser = \uid -> do
       auth <- authCheck @tag authData
       deleteUser @tag auth uid

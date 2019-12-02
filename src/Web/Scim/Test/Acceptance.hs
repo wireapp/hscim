@@ -3,9 +3,9 @@
 -- implementation is compatible with popular SCIM 2.0 providers
 module Web.Scim.Test.Acceptance where
 
-import Web.Scim.Test.Util (scim, post,  put, patch, get', post', put', patch', delete')
-import Test.Hspec (Spec, it, beforeAll, pending, describe, shouldBe)
-import Test.Hspec.Wai (shouldRespondWith, delete, get, matchStatus, matchBody, MatchBody(..))
+import Web.Scim.Test.Util (scim, get', post', patch', delete')
+import Test.Hspec (Spec, it, beforeAll, pending, describe,)
+import Test.Hspec.Wai (shouldRespondWith,  matchStatus)
 import Network.Wai (Application)
 
 
@@ -98,13 +98,13 @@ microsoftAzure app = do
                             "value": "5b50642d-79fc-4410-9e90-4c077cdd1a59@testuser.com"
                     }]
             }
-          |] `shouldRespondWith` 200
+          |] `shouldRespondWith` "" { matchStatus = 200  }
           -- TODO match body
       it "Delete User" $ do
         delete' "/Users/0" "" `shouldRespondWith` 204
         delete' "/Users/0" "" `shouldRespondWith` 404
     describe "Group operations" $ 
-      it "is in progress" $ \app -> pending
+      it "is in progress" $ \_-> pending
 
           
 

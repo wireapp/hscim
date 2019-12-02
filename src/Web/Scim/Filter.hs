@@ -44,21 +44,20 @@ module Web.Scim.Filter
 
 import Data.String
 import Prelude hiding (takeWhile)
-import Control.Applicative((<|>), optional)
+import Control.Applicative(optional)
 import Data.Scientific
-import Data.Text (Text, cons, pack, toLower, toCaseFold, isInfixOf, isPrefixOf, isSuffixOf)
+import Data.Text (Text, cons, pack, toLower, isInfixOf, isPrefixOf, isSuffixOf)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Text.Lazy (toStrict)
 import Data.Attoparsec.ByteString.Char8
 import Data.Aeson.Parser as Aeson
 import Data.Aeson.Text as Aeson
 import Data.Aeson as Aeson
-import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe)
 import Lens.Micro 
 import Web.HttpApiData
 
-import Web.Scim.Schema.Schema (Schema(User20), getSchemaUri, fromSchemaUri, pSchema)
+import Web.Scim.Schema.Schema (getSchemaUri, Schema, pSchema)
 
 ----------------------------------------------------------------------------
 -- Types
@@ -165,7 +164,7 @@ pValuePath =
   ValuePath <$> pAttrPath <*> (char '[' *> pFilter <* char ']')
 
 rValuePath :: ValuePath -> Text
-rValuePath (ValuePath attrPath filter) = rAttrPath attrPath <> "[" <> renderFilter filter <> "]"
+rValuePath (ValuePath attrPath filter') = rAttrPath attrPath <> "[" <> renderFilter filter' <> "]"
 
 
 -- Note: this parser is written with Attoparsec because I don't know how to

@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -46,18 +47,17 @@
 --
 module Web.Scim.Schema.User where
 
-import Data.Proxy
 import Data.Dynamic
 import Control.Monad (foldM)
-import Data.Text (Text, toLower, toCaseFold)
+import Data.Text (Text, pack, toLower, toCaseFold)
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import Lens.Micro 
 
-import Web.Scim.Filter (Filter(..), AttrPath(..), rAttrName, compareStr, AttrName, CompValue(..))
+import Web.Scim.Filter (Filter(..), AttrPath(..), rAttrName, compareStr, CompValue(..))
 import Web.Scim.Schema.Common
 import Web.Scim.Schema.Schema (Schema(..))
-import Web.Scim.Schema.PatchOp (Path(..), PatchOp, Op(..), Operation(Operation), getOperations)
+-- import Web.Scim.Schema.PatchOp (Path(..), PatchOp, Op(..), Operation(Operation), getOperations)
 import Web.Scim.Schema.User.Address (Address)
 import Web.Scim.Schema.User.Certificate (Certificate)
 import Web.Scim.Schema.User.Email (Email)
@@ -65,10 +65,11 @@ import Web.Scim.Schema.User.IM (IM)
 import Web.Scim.Schema.User.Name (Name)
 import Web.Scim.Schema.User.Phone (Phone)
 import Web.Scim.Schema.User.Photo (Photo)
+import Web.Scim.Schema.PatchOp
 import Web.Scim.Schema.Error
-import Web.Scim.Class.Patch
 
 import GHC.Generics (Generic)
+import Control.Monad.Except
 
 -- | Configurable parts of 'User'.
 class UserTypes tag where
@@ -127,38 +128,6 @@ data User tag = User
 
 deriving instance Show (UserExtra tag) => Show (User tag)
 deriving instance Eq (UserExtra tag) => Eq (User tag)
-
-instance PathLens (User tag) where
-  removeAttr (AttrPath schema attrName subAttr) user =
-    case attrName of
-      "username" -> Left (badRequest Mutability Nothing)
-      "displayName" -> pure $ user { displayName = Nothing}
-      "externalId" -> pure $ user { externalId = Nothing}
-      "name" ->
-        case subAttr of
-          Nothing -> pure $ user { name = Nothing}
-          Just x -> do
-            name' <- removeSubAttr x (name user)
-            pure $ user { name = name' }
-  pathLens (AttrPath schema attrName subAttr) =
-    -- TODO(arianvp): Support all fields
-    -- FUTUREWORK(arianvp): Generate this with Generics. This is purely mechanical
-    case attrName of
-      "username" -> pure $ GetSet userName (\x value -> pure $ x { userName = value})
-      "displayname" -> pure $ GetSet displayName (\x value -> pure $ x { displayName = value})
-      "externalid" -> pure $ GetSet externalId (\x value -> pure $ x { externalId = value})
-      -- Example of how to set a nested field
-      "name" ->
-        case subAttr of
-          Nothing -> pure $ GetSet name (\x value -> pure $ x { name = value })
-          Just x -> do
-            GetSet getX setX <- subAttrLens x
-            pure $ GetSet (getX . name) $ \y value -> do
-              value' <- setX (name y) value
-              pure $ y { name = value' }
-      -- unsupported fields do not modify the user for now.  TODO(arianvp): there shouldn't be unsupported fields
-      -- TODO(arianvp) implement
-      _ -> undefined
 
 
 
@@ -288,12 +257,12 @@ instance ToJSON NoUserExtra where
 -- Evenmore, only some hand-picked ones currently.
 -- We'll have to think how patch is going to work in the presence of extensions.
 -- Also, we can probably make  PatchOp type-safe to some extent (Read arianvp's thesis :))
---
---
-
-applyPatch :: User tag  -> PatchOp -> Either ScimError (User tag)
+applyPatch :: (FromJSON (UserExtra tag), MonadError ScimError m) => User tag  -> PatchOp ->  m (User tag)
 applyPatch = (. getOperations) . foldM applyOperation
 
+resultToScimError :: (MonadError ScimError m) => Result a -> m a
+resultToScimError (Error reason) = throwError $ badRequest InvalidValue (Just (pack reason))
+resultToScimError (Success a) = pure a
 
 -- TODO(arianvp): support multi-valuued and complex attributes.
 -- TODO(arianvp): Actually do this in some kind of type-safe way. e.g.
@@ -302,56 +271,37 @@ applyPatch = (. getOperations) . foldM applyOperation
 -- What I understand from the spec:  The difference between add an replace is only
 -- in the fact that replace will not concat multi-values, and behaves differently for complex values too.
 -- For simple attributes, add and replace are identical
+applyOperation :: forall m tag. (MonadError ScimError m, FromJSON (UserExtra tag)) =>  User tag  -> Operation -> m (User tag)
+applyOperation user (Operation Add path value) = applyOperation user (Operation Replace path value)
 
-resultToScimError :: Result a -> Either ScimError a
-resultToScimError = undefined
-applyOperation :: forall tag. User tag  -> Operation -> Either ScimError (User tag)
-applyOperation user (Operation op path mValue) = 
-  let
-    applyAdd :: User tag -> Path ->  Either ScimError (User tag)
-    applyAdd u (NormalPath attrPath) = do
-      value <- maybe (Left undefined) pure mValue
-      GetSet get set <- pathLens attrPath
-      x <- resultToScimError $ fromJSON value
-      set user x
-    applyAdd u (IntoValuePath _ _)  = Left undefined -- no value paths supported yet
-  in case op of
-    Add ->
-      case path of
-         -- o If omitted, the target location is assumed to be the resource
-         --   itself.  The "value" parameter contains a set of attributes to be
-         --   added to the resource.
-         --
-        Nothing -> undefined -- TODO(arianvp):
- 
-        Just path -> applyAdd user path
-          -- o  If the target location does not exist, the attribute and value are
-          --      added.
-          --
-          --   NOTE(arianvp): Add a test for this. This sounds important.
-          --   Currently in Spar, this constraint is fulfilled by the fact
-          --   that PUT does this already and our PATCH is implemented in terms of PUT.
-          --   TODO(arianvp): It would be nicer if this updating of the modified metadata
-          --    is pushed to the library level instead though!
-          --   o  If the target location already contains the value specified, no
-          --      changes SHOULD be made to the resource, and a success response
-          --      SHOULD be returned.  Unless other operations change the resource,
-          --      this operation SHALL NOT change the modify timestamp of the
-          --      resource.
-    Replace ->
-      case path of
-       Nothing -> undefined
-       -- TODO(arianvp): Add and replace are identical at the moment.
-       Just path -> applyAdd user path
-    Remove -> do
-      case path of
-        Just (NormalPath attrPath) -> do
-          removeAttr attrPath user 
-        Just (IntoValuePath _ _) -> Left undefined
-        Nothing -> Left $ badRequest NoTarget Nothing
+applyOperation user (Operation Replace (Just (NormalPath (AttrPath _schema attr _subAttr))) (Just value)) = do
+  case attr of
+    "username" -> (\x -> user { userName = x }) <$> resultToScimError (fromJSON value)
+    "displayname" -> (\x -> user { displayName = x }) <$> resultToScimError (fromJSON value)
+    "externalid" -> (\x -> user { externalId = x }) <$> resultToScimError (fromJSON value)
+    -- NOTE: unsupported fields we silently ignore to not shoot ourselves in the foot
+    _ -> pure user 
+applyOperation _ (Operation Replace (Just (IntoValuePath _ _)) _) = do
+  throwError (unimplemented "can not lens into multi-valued attributes yet")
+applyOperation user (Operation Replace Nothing (Just value)) = do
+  (u :: User tag) <- resultToScimError $ fromJSON value
+  pure $ user 
+    { userName = userName u
+    , displayName = displayName u
+    , externalId = externalId u
+    }
+applyOperation _ (Operation Replace _ Nothing) =
+  throwError (badRequest InvalidValue (Just "No value was provided"))
 
-      
-
+applyOperation _ (Operation Remove Nothing _) = throwError (badRequest NoTarget Nothing)
+applyOperation user (Operation Remove (Just (NormalPath (AttrPath _schema attr _subAttr))) _value) =
+  case attr of
+    "username" -> throwError (badRequest Mutability Nothing)
+    "displayname" -> pure $ user { displayName = Nothing }
+    "externalid" -> pure $ user { externalId = Nothing }
+    _ -> pure user
+applyOperation _ (Operation Remove (Just (IntoValuePath _ _)) _) = do
+  throwError (unimplemented "can not lens into multi-valued attributes yet")
 
 -- | Check whether a user satisfies the filter.
 --
@@ -373,6 +323,33 @@ filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
 
 -- Omission of a schema for users is implicitly the core schema
 -- TODO(arianvp): Link to part of the spec that claims this.
+isUserSchema :: Maybe Schema -> Bool
 isUserSchema Nothing = True
 isUserSchema (Just User20) = True
 isUserSchema _ = False
+
+
+{-
+data NameField y where
+  FirstName :: NameField "firstName" 
+
+-- | Used to statically reflect on the user label
+data UserField x y where
+  UserName :: UserField "userName" y
+  ExternalId :: UserField "externalId" y
+  Name :: Maybe (NameField y) -> UserField "name" y
+  DisplayName :: UserField "displayName" y
+
+
+
+data UserPatchOp tag x y a where
+  Add :: HasField x (User tag) a => UserField x y -> a -> UserPatchOp tag x y a
+  Replace :: HasField x (User tag) a => UserField x y -> a -> UserPatchOp tag x y a
+  Remove :: HasField x (User tag) a => UserField x y -> UserPatchOp tag x y a
+
+
+
+applyUserPatchOp :: UserPatchOp tag x y a -> User tag -> Maybe (User tag)
+applyUserPatchOp = _
+
+-}

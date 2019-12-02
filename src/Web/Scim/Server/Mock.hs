@@ -30,7 +30,6 @@ import           Web.Scim.Schema.ListResponse
 import           Web.Scim.Schema.ResourceType
 import           Web.Scim.Schema.Common (WithId(WithId, value))
 import qualified Web.Scim.Schema.Common     as Common
-import           Web.Scim.Filter
 import           Web.Scim.Handler
 import           Servant
 

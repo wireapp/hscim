@@ -3,17 +3,16 @@ module Test.Schema.PatchOpSpec where
 
 import Data.Either (isRight)
 import Data.Foldable (for_)
-import Data.Text (Text)
-import Test.Hspec (Spec, describe, xdescribe, it, pending, shouldBe, shouldSatisfy)
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Web.Scim.Test.Util (scim, post, put, patch, roundtrip)
+import Test.Hspec (Spec, describe, it, pending, shouldSatisfy)
+import Data.Text.Encoding (encodeUtf8)
+import Web.Scim.Test.Util (scim, roundtrip)
 import Web.Scim.Schema.PatchOp
 import Data.Aeson.Types (fromJSON, Result(Success, Error))
 import Data.Attoparsec.ByteString (parseOnly)
 import HaskellWorks.Hspec.Hedgehog (require)
 import Hedgehog (Gen)
 import qualified Hedgehog.Gen as Gen
-import Test.FilterSpec (genValuePath, genAttrPath, genSubAttr, genFilter)
+import Test.FilterSpec (genValuePath, genAttrPath, genSubAttr)
 
 
 genPath :: Gen Path
@@ -22,6 +21,7 @@ genPath = Gen.choice
   , NormalPath <$> genAttrPath
   ]
 
+isSuccess :: Result a -> Bool
 isSuccess (Success _) = True
 isSuccess (Error _) = False
 

@@ -2,8 +2,8 @@ module Web.Scim.Schema.PatchOp where
 
 import Control.Applicative
 import Control.Monad (guard)
-import Web.Scim.Schema.Schema (Schema(PatchOp20), getSchemaUri,fromSchemaUri)
-import Data.Aeson.Types (Value, withText, FromJSON(parseJSON), ToJSON, withObject, (.:), Value)
+import Web.Scim.Schema.Schema (Schema(PatchOp20))
+import Data.Aeson.Types (Value, withText, FromJSON(parseJSON), withObject, (.:), Value)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Text (toLower, Text)
 import Data.Text.Encoding (encodeUtf8)
@@ -50,7 +50,7 @@ data Path
   deriving (Eq, Show)
 
 instance  FromJSON Path where
-  parseJSON = withText "Path" $ \path -> case parseOnly pPath (encodeUtf8 path) of
+  parseJSON = withText "Path" $ \v -> case parseOnly pPath (encodeUtf8 v) of
     Left x -> fail x
     Right x -> pure x
 
