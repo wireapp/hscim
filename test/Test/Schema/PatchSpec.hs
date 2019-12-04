@@ -14,7 +14,6 @@ import Hedgehog (Gen)
 import qualified Hedgehog.Gen as Gen
 import Test.FilterSpec (genValuePath, genAttrPath, genSubAttr)
 
-
 genPath :: Gen Path
 genPath = Gen.choice
   [ IntoValuePath <$> genValuePath <*> Gen.maybe genSubAttr
@@ -85,6 +84,18 @@ spec = do
         describe "Add" $ do
           describe "The result of the add operation depends upon what the target location indicated by \"path\" references:" $ do
             it "If omitted, the target location is assumed to be the resource itself.  The \"value\" parameter contains a set of attributes to be added to the resource." $
+              let patchOp = [|scim {
+               "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+               "Operations": [
+                {
+                  "op": "Add",
+                  "value": {
+                    "userName": "arian"
+                  }
+                }
+               ]
+               
+              }|]
               -- TODO: This we can test already
               pending
             it "If the target location does not exist, the attribute and value are added." $
@@ -104,7 +115,9 @@ spec = do
               -- TODO(arianvp): This we can test already. Spec is vague. Sounds the same as above
               pending
             it "If the target location already contains the value specified, no changes SHOULD be made to the resource, and a success response SHOULD be returned.  Unless other operations change the resource, this operation SHALL NOT change the modify timestamp of the resource." $
-              -- TODO(arianvp): This we can test already
+              -- TODO(arianvp): We cannot test this in the library, as we
+              -- pushed this concern to the user of the library. Which is
+              -- probably something we shouldn't do
               pending
           it "When the path contains a schema, this schema must be implicitly added to the list of schemas on the result type" $
             pending -- TODO(arianvp): Quote the spec for this. And implement the test
