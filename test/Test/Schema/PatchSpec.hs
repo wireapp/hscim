@@ -1,16 +1,16 @@
 {-# LANGUAGE QuasiQuotes #-}
-module Test.Schema.PatchOpSpec where
+module Test.Schema.PatchSpec where
 
 import Data.Either (isRight)
 import Data.Foldable (for_)
 import Test.Hspec (Spec, describe, it, pending, shouldSatisfy)
 import Data.Text.Encoding (encodeUtf8)
-import Web.Scim.Test.Util (scim, roundtrip)
+import Web.Scim.Test.Util (scim)
 import Web.Scim.Schema.PatchOp
 import Data.Aeson.Types (fromJSON, Result(Success, Error))
 import Data.Attoparsec.ByteString (parseOnly)
-import HaskellWorks.Hspec.Hedgehog (require)
-import Hedgehog (Gen)
+import HaskellWorks.Hspec.Hedgehog (requireProperty)
+import Hedgehog (Gen, tripping, forAll)
 import qualified Hedgehog.Gen as Gen
 import Test.FilterSpec (genValuePath, genAttrPath, genSubAttr)
 
@@ -42,8 +42,9 @@ spec = do
             "operations": []
           }|] `shouldSatisfy`  (not . isSuccess)
       --TODO(arianvp): We don't support arbitrary path names (yet)
-      it "roundtrips" $ do
-        require $ roundtrip (encodeUtf8 . rPath) (parseOnly pPath) genPath
+      it "roundtrips" $ requireProperty $ do
+        x <- forAll genPath
+        tripping x (encodeUtf8 . rPath) (parseOnly pPath)
       describe "Examples from https://tools.ietf.org/html/rfc7644#section-3.5.2 Figure 8" $ do
         let
           examples =
@@ -84,18 +85,6 @@ spec = do
         describe "Add" $ do
           describe "The result of the add operation depends upon what the target location indicated by \"path\" references:" $ do
             it "If omitted, the target location is assumed to be the resource itself.  The \"value\" parameter contains a set of attributes to be added to the resource." $
-              let patchOp = [|scim {
-               "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-               "Operations": [
-                {
-                  "op": "Add",
-                  "value": {
-                    "userName": "arian"
-                  }
-                }
-               ]
-               
-              }|]
               -- TODO: This we can test already
               pending
             it "If the target location does not exist, the attribute and value are added." $

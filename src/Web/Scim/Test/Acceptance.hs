@@ -4,7 +4,7 @@
 module Web.Scim.Test.Acceptance where
 
 import Web.Scim.Test.Util (scim, get', post', patch', delete')
-import Test.Hspec (Spec, it, shouldBe, beforeAll, pending, describe,)
+import Test.Hspec (Spec, xit, it, shouldBe, beforeAll, pending, describe,)
 import Test.Hspec.Wai (shouldRespondWith,  matchStatus)
 import Network.Wai (Application)
 
@@ -82,7 +82,7 @@ microsoftAzure app = do
             "itemsPerPage": 0
           }
         |] { matchStatus = 200 }
-      it "Update user [Multi-valued properties" $ do
+      xit "Update user [Multi-valued properties" $ do
         patch' "/Users/0" [scim|
             {
               "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],

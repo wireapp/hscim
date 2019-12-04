@@ -1,4 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Test.Schema.UserSpec (spec) where
@@ -22,10 +23,20 @@ import           Lens.Micro
 import           Test.Hspec
 import           Text.Email.Validate (emailAddress)
 import           Network.URI.Static (uri)
+import           HaskellWorks.Hspec.Hedgehog (require)
+import           Hedgehog 
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 
+prop_roundtrip :: Property
+prop_roundtrip = property $ do
+  user <- forAll genUser
+  tripping user toJSON fromJSON
+  
 spec :: Spec
 spec = do
   describe "JSON serialization" $ do
+    it "roundstrips" $ require $ prop_roundtrip
     it "handles all fields" $ do
       toJSON completeUser `shouldBe` completeUserJson
       eitherDecode (encode completeUserJson) `shouldBe` Right completeUser
@@ -52,6 +63,70 @@ spec = do
       toJSON (extendedUser (UserExtraObject "foo")) `shouldBe` extendedUserObjectJson
       eitherDecode (encode extendedUserObjectJson) `shouldBe`
         Right (extendedUser (UserExtraObject "foo"))
+
+genName :: Gen Name
+genName =
+  Name
+    <$> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
+    <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
+    <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
+    <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
+    <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
+    <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
+  
+
+genUri :: Gen URI
+genUri = Gen.element [ URI [uri|https://example.com|] ]
+
+genUser :: Gen (User (TestTag Text () () NoUserExtra))
+genUser = do
+  schemas' <- pure [User20] -- TODO random schemas or?
+  userName' <- Gen.text (Range.constant 0 20) Gen.unicode
+  externalId' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  name' <- Gen.maybe genName
+  displayName' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  nickName' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  profileUrl' <- Gen.maybe $ genUri
+  title' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  userType' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  preferredLanguage' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  locale' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  active' <- Gen.maybe $ Gen.bool
+  password' <- Gen.maybe $ Gen.text (Range.constant 0 20) Gen.unicode
+  emails' <- pure [] -- Gen.list (Range.constant 0 20) genEmail
+  phoneNumbers' <- pure [] -- Gen.list (Range.constant 0 20) genPhone
+  ims' <- pure [] -- Gen.list (Range.constant 0 20) genIM
+  photos' <- pure [] -- Gen.list (Range.constant 0 20) genPhoto
+  addresses' <- pure [] -- Gen.list (Range.constant 0 20) genAddress
+  entitlements' <- pure [] -- Gen.list (Range.constant 0 20) (Gen.text (Range.constant 0 20) Gen.unicode)
+  roles' <- pure [] -- Gen.list (Range.constant 0 20) (Gen.text (Range.constant 0 10) Gen.unicode)
+  x509Certificates' <- pure [] -- Gen.list (Range.constant 0 20) genCertificate
+
+  pure $ User
+    { schemas = schemas'
+    , userName = userName'
+    , externalId = externalId'
+    , name = name'
+    , displayName = displayName'
+    , nickName = nickName'
+    , profileUrl = profileUrl'
+    , title = title'
+    , userType = userType'
+    , preferredLanguage = preferredLanguage'
+    , locale = locale'
+    , active = active'
+    , password = password'
+    , emails = emails'
+    , phoneNumbers = phoneNumbers'
+    , ims = ims'
+    , photos = photos'
+    , addresses = addresses'
+    , entitlements = entitlements'
+    , roles = roles'
+    , x509Certificates = x509Certificates'
+    , extra = NoUserExtra
+    }
+
 
 -- | A 'User' with all attributes present.
 completeUser :: User (TestTag Text () () NoUserExtra)

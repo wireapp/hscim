@@ -6,17 +6,22 @@ import           Web.Scim.Filter
 import           Web.Scim.Schema.Schema (Schema(User20, Group20))
 
 import           Test.Hspec
-import           Web.Scim.Test.Util
 import           HaskellWorks.Hspec.Hedgehog
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Data.Text (cons)
 
+
+prop_roundtrip :: Property
+prop_roundtrip = property $ do
+  x <- forAll genFilter
+  tripping x renderFilter parseFilter
+
 spec :: Spec
 spec = do
   describe "Filter" $ do
-    it "parse . render === id" $ require $ roundtrip renderFilter parseFilter genFilter
+    it "parse . render === id" $ require $ prop_roundtrip
 ----------------------------------------------------------------------------
 -- Generators
 

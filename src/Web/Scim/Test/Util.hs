@@ -12,8 +12,6 @@ module Web.Scim.Test.Util (
   , getField
   -- * Tag
   , TestTag
-  -- * Property tests
-  , roundtrip, roundtripJSON
   ) where
 
 import           Data.ByteString (ByteString)
@@ -34,7 +32,6 @@ import qualified Data.HashMap.Strict as SMap
 import           Web.Scim.Schema.User (UserTypes (..))
 import           Web.Scim.Class.Group (GroupTypes (..))
 import           Web.Scim.Class.Auth (AuthTypes (..))
-import Hedgehog (property, Gen, Property, forAll, (===))
 
 ----------------------------------------------------------------------------
 -- Redefine wai test helpers to include scim+json content type
@@ -149,13 +146,3 @@ instance AuthTypes (TestTag id authData authInfo userExtra) where
   type AuthData (TestTag id authData authInfo userExtra) = authData
   type AuthInfo (TestTag id authData authInfo userExtra) = authInfo
 
-
-
-roundtrip :: (Applicative f, Eq (f a), Show (f a), Eq a, Show a) => (a -> b) -> (b -> f a) -> Gen a -> Property
-roundtrip to from gen = property $ do
-  example <- forAll gen
-  from (to example) === pure example
-
-roundtripJSON :: (Eq a, Show a, FromJSON a, ToJSON a) => Gen a -> Property
-roundtripJSON = roundtrip toJSON fromJSON
-  
