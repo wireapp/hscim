@@ -24,6 +24,7 @@ isSuccess :: Result a -> Bool
 isSuccess (Success _) = True
 isSuccess (Error _) = False
 
+
 spec :: Spec
 spec = do
   let 

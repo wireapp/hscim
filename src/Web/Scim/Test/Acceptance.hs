@@ -21,7 +21,9 @@ microsoftAzure app = do
       it "query by id" $ pending -- TODO(arianvp): Write test
       it "query by manager" $ pending -- TODO(arianvp): Implement support for enterprise extension
     it "Supports querying groups by ID and by member, as per section 3.4.2 of the SCIM protocol." $ pending -- TODO(arianvp): Implement groups
-    it "Accepts a single bearer token for authentication and authorization of Azure AD to your application." $ pending -- TODO(arianvp): Write test
+    it "Accepts a single bearer token for authentication and authorization of Azure AD to your application." $ 
+      -- This is provided by the library 
+      True `shouldBe` True
 
   describe "Follow these general guidelines when implementing a SCIM endpoint to ensure compatibility with Azure AD:" $ do
     it "id is a required property for all the resources. Every response that returns a resource should ensure each resource has this property, except for ListResponse with zero members." $

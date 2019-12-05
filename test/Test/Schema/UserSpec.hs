@@ -1,5 +1,6 @@
-{-# LANGUAGE QuasiQuotes #-}
+{- LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Test.Schema.UserSpec (spec) where
@@ -18,7 +19,7 @@ import           Web.Scim.Schema.User.Phone as Phone
 import           Web.Scim.Schema.User.Photo as Photo
 import           Data.Aeson
 import qualified Data.HashMap.Strict as HM
-import           Data.Text (Text, toLower)
+import           Data.Text (Text, toLower, toUpper)
 import           Lens.Micro
 import           Test.Hspec
 import           Text.Email.Validate (emailAddress)
@@ -32,12 +33,27 @@ prop_roundtrip :: Property
 prop_roundtrip = property $ do
   user <- forAll genUser
   tripping user toJSON fromJSON
+
+
+
+-- TODO(arianvp): Note that this only tests the top-level fields. 
+-- extrac this to a generic test and also do this for sub-properties
+prop_caseInsensitive :: Property
+prop_caseInsensitive = property $ do
+  user <- forAll genUser
+  let (Object user') = toJSON user
+  let user'' = HM.foldlWithKey' (\u k v -> HM.insert (toUpper k) v u) user' HM.empty
+  let user''' = HM.foldlWithKey' (\u k v -> HM.insert (toLower k) v u) user' HM.empty
+
+  fromJSON (Object user'') === Success user
+  fromJSON (Object user''') === Success user
+
   
 spec :: Spec
 spec = do
   describe "JSON serialization" $ do
-    it "roundstrips" $ require $ prop_roundtrip
     it "handles all fields" $ do
+      require prop_roundtrip
       toJSON completeUser `shouldBe` completeUserJson
       eitherDecode (encode completeUserJson) `shouldBe` Right completeUser
 
@@ -45,10 +61,12 @@ spec = do
       toJSON minimalUser `shouldBe` minimalUserJson
       eitherDecode (encode minimalUserJson) `shouldBe` Right minimalUser
 
+    -- TODO(arianvp): BUG. It should _not_ do that in the case of PUT and PATCH
     it "treats 'null' and '[]' as absence of fields" $
       eitherDecode (encode minimalUserJsonRedundant) `shouldBe` Right minimalUser
 
-    it "allows casing variations in field names" $
+    it "allows casing variations in field names" $ do
+      require prop_caseInsensitive
       eitherDecode (encode minimalUserJsonNonCanonical) `shouldBe` Right minimalUser
 
     it "doesn't require the 'schemas' field" $
@@ -78,6 +96,8 @@ genName =
 genUri :: Gen URI
 genUri = Gen.element [ URI [uri|https://example.com|] ]
 
+-- TODO(arianvp) Generate the lists too, but first need better support for SCIM
+-- lists in the first place
 genUser :: Gen (User (TestTag Text () () NoUserExtra))
 genUser = do
   schemas' <- pure [User20] -- TODO random schemas or?
