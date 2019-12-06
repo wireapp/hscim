@@ -3,7 +3,7 @@ module Web.Scim.Schema.PatchOp where
 import Control.Applicative
 import Control.Monad (guard)
 import Web.Scim.Schema.Schema (Schema(PatchOp20))
-import Data.Aeson.Types (Value, withText, FromJSON(parseJSON), withObject, (.:), Value)
+import Data.Aeson.Types (Value, withText, FromJSON(parseJSON), withObject, (.:), (.:?), Value)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Text (toCaseFold, toLower, Text)
 import Data.Text.Encoding (encodeUtf8)
@@ -81,7 +81,7 @@ instance FromJSON PatchOp where
 instance FromJSON Operation where
   parseJSON = withObject "Operation" $ \v -> do
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
-    Operation <$> (o .: "op") <*> (o .: "path") <*> (o .: "value")
+    Operation <$> (o .: "op") <*> (o .: "path") <*> (o .:? "value")
 
     
 

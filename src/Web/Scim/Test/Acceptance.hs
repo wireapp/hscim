@@ -5,7 +5,7 @@ module Web.Scim.Test.Acceptance where
 
 import Web.Scim.Test.Util (scim, get', post', patch', delete')
 import Test.Hspec (Spec, xit, it, shouldBe, beforeAll, pending, describe,)
-import Test.Hspec.Wai (shouldRespondWith,  matchStatus)
+import Test.Hspec.Wai (shouldRespondWith,  matchStatus, matchBody)
 import Network.Wai (Application)
 
 
@@ -103,8 +103,8 @@ microsoftAzure app = do
             }
         |] `shouldRespondWith` 200
         -- TODO match body
-      it "Update user [Single-valued properties]" $ do
-        patch' "/Users/0"
+      describe "Update user [Single-valued properties]" $ do
+        it "replace userName" $ patch' "/Users/0"
           [scim|
             {
                     "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
@@ -115,6 +115,88 @@ microsoftAzure app = do
                     }]
             }
           |] `shouldRespondWith` 200
+        it "replace displayName" $ patch' "/Users/0"
+          [scim|
+            {
+                    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                    "Operations": [{
+                            "op": "Replace",
+                            "path": "displayName",
+                            "value": "newDisplayName"
+                    }]
+            }
+          |] `shouldRespondWith` [scim|
+            {
+              "schemas": [
+                "urn:ietf:params:scim:schemas:core:2.0:User",
+                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"
+              ],
+              "userName": "5b50642d-79fc-4410-9e90-4c077cdd1a59@testuser.com",
+              "active": true,
+              "name": {
+                "givenName": "givenName",
+                "formatted": "givenName familyName",
+                "familyName": "familyName"
+              },
+              "emails": [
+                {
+                  "value": "Test_User_fd0ea19b-0777-472c-9f96-4f70d2226f2e@testuser.com",
+                  "primary": true,
+                  "type": "work"
+                }
+              ],
+              "displayName": "newDisplayName",
+              "id": "0",
+              "meta": {
+                "resourceType": "User",
+                "location": "todo",
+                "created": "2018-01-01T00:00:00Z",
+                "version": "W/\"testVersion\"",
+                "lastModified": "2018-01-01T00:00:00Z"
+              },
+              "externalId": "0a21f0f2-8d2a-4f8e-bf98-7363c4aed4ef"
+            }
+          |]
+        it "remove displayName" $ patch' "/Users/0"
+          [scim|
+            {
+                    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                    "Operations": [{
+                            "op": "Remove",
+                            "path": "displayName"
+                    }]
+            }
+          |] `shouldRespondWith`  [scim|
+            {
+              "schemas": [
+                "urn:ietf:params:scim:schemas:core:2.0:User",
+                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"
+              ],
+              "userName": "5b50642d-79fc-4410-9e90-4c077cdd1a59@testuser.com",
+              "active": true,
+              "name": {
+                "givenName": "givenName",
+                "formatted": "givenName familyName",
+                "familyName": "familyName"
+              },
+              "emails": [
+                {
+                  "value": "Test_User_fd0ea19b-0777-472c-9f96-4f70d2226f2e@testuser.com",
+                  "primary": true,
+                  "type": "work"
+                }
+              ],
+              "id": "0",
+              "meta": {
+                "resourceType": "User",
+                "location": "todo",
+                "created": "2018-01-01T00:00:00Z",
+                "version": "W/\"testVersion\"",
+                "lastModified": "2018-01-01T00:00:00Z"
+              },
+              "externalId": "0a21f0f2-8d2a-4f8e-bf98-7363c4aed4ef"
+            }
+          |]
           -- TODO match body
       it "Delete User" $ do
         delete' "/Users/0" "" `shouldRespondWith` 204
