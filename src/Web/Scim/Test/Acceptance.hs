@@ -3,7 +3,7 @@
 -- implementation is compatible with popular SCIM 2.0 providers
 module Web.Scim.Test.Acceptance where
 
-import Web.Scim.Test.Util (scim, get', post', patch', delete')
+import Web.Scim.Test.Util (scim, get', put', post', patch', delete')
 import Test.Hspec (Spec, xit, it, shouldBe, beforeAll, pending, describe,)
 import Test.Hspec.Wai (shouldRespondWith,  matchStatus, matchBody)
 import Network.Wai (Application)
@@ -103,6 +103,11 @@ microsoftAzure app = do
             }
         |] `shouldRespondWith` 200
         -- TODO match body
+      describe "Partial PUT does not reset fields" $ do
+        it "partial put" $ put' "/Users/0"
+          [scim|
+            { "displayName": "arian" }
+          |] `shouldRespondWith` 200
       describe "Update user [Single-valued properties]" $ do
         it "replace userName" $ patch' "/Users/0"
           [scim|

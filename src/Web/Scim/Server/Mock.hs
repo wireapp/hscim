@@ -104,6 +104,7 @@ instance UserDB Mock TestServer where
     liftSTM (STMMap.lookup uid m) >>= \case
       Nothing -> throwScim (notFound "User" (pack (show uid)))
       Just stored -> do
+        -- TODO: This implementation is incorrect
         let newUser = WithMeta (meta stored) $ WithId uid user
         liftSTM $ STMMap.insert newUser uid m
         pure newUser

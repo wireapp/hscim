@@ -102,6 +102,7 @@ tests:
       - aeson-qq
       - base
       - bytestring
+      - containers
       - hedgehog
       - hspec
       - hspec-discover

@@ -51,7 +51,6 @@ data UserSite tag route = UserSite
       DeleteNoContent '[SCIM] NoContent
   } deriving (Generic)
 
-
 ----------------------------------------------------------------------------
 -- Methods used by the API
 
@@ -83,13 +82,6 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
   -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if uniqueness
   -- constraints are violated.
   --
-  -- TODO(arianvp): The spec allows to to MAY tread fields that are unassigned as
-  -- explicitly set to zero (removed). We are gonna use that assumptions as
-  -- that makes PATCH implementable in terms of PUT. This means that an
-  -- implementor of this typeclass should not interpret Nothing as "ignore"
-  -- but always as "remove"
-  --
-  -- 
   putUser
     :: AuthInfo tag
     -> UserId tag
@@ -111,6 +103,10 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
   --
   --  SCIM's Patch semantics are hard to get right. So we advice using the library
   --  built-in implementation.
+  -- Because our PUT currently still has some issues (https://github.com/wireapp/hscim/issues/2),
+  -- we implement PATCH in terms of a GET followed by a PUT.  GET will retrieve the entire record;
+  -- we then modify this record by a series of PATCH operations, and then PUT the entire record.
+  -- We thus always provide _all_ fields in PUT, eventhough we could be more 'smart' about it. 
   patchUser
     :: AuthInfo tag
     -> UserId tag

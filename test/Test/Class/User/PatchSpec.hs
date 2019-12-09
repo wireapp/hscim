@@ -5,34 +5,13 @@ module Test.Class.User.PatchSpec where
 
 import Test.Hspec (Spec, describe, it, pending)
 
-{-import Control.Monad.State
-import Control.Monad.State.Class
-import Web.Scim.Server.Mock
-import Web.Scim.Class.User
 import Web.Scim.Filter
-import Web.Scim.Handler
-import Web.Scim.Class.Auth
 import Data.IntMap (IntMap)
 import Web.Scim.Schema.Meta
 import Web.Scim.Schema.User
 import Web.Scim.Schema.ListResponse
 import Web.Scim.Schema.Common
 import qualified Data.IntMap as IntMap
--}
-
-{-
-data Tag
-
-newtype MockUserDB a = MockUserDB (State (IntMap (StoredUser Tag)) a)
-  deriving 
-    (Functor, Applicative, Monad)
-    -- Can't do this as cant have type family within deriving clause T_T
-    -- , MonadState (IntMap (WithMeta (WithId (UserId Tag) (User Tag)))))
-
-instance UserDB Tag MockUserDB where
-  getUsers :: AuthInfo Tag -> Maybe Filter -> ScimHandler MockUserDB (ListResponse (StoredUser Tag))
-  getUsers = undefined
--}
 
 spec :: Spec
 spec = do
