@@ -68,6 +68,43 @@ spec = beforeAll app $ do
     it "does not create new users" $ do
       put "/9999" newBarbara `shouldRespondWith` 404
 
+  describe "PATCH /Users/:id" $ do
+    describe "Add" $ do
+      -- TODO(arianvp): Implement and test multi-value fields properly
+      -- TODO(arianvp): We need to merge multi-value fields, but not supported yet
+      it "adds all fields if no target" $ do
+        put "/0" barbUpdate0  -- reset
+        patch "/0" [scim|{
+        }|] `shouldRespondWith` 200
+      it "adds fields if they didn't exist yet" $ do
+        put "/0" barbUpdate0  -- reset
+        patch "/0" [scim|{
+        }|] `shouldRespondWith` 200
+      it "replaces individual simple fields" $ do
+        put "/0" barbUpdate0  -- reset
+        patch "/0" [scim|{
+        }|] `shouldRespondWith` 200
+        
+    describe "Replace" $ do
+      -- TODO(arianvp): Implement and test multi-value fields, and their paths
+      it "replaces all fields if no target" $ do
+        put "/0" barbUpdate0  -- reset
+        patch "/0" [scim|{
+        }|] `shouldRespondWith` 200
+      it "adds fields if they didn't exist yet" $ do
+        put "/0" barbUpdate0  -- reset
+        patch "/0" [scim|{
+        }|] `shouldRespondWith` 200
+    describe "Remove" $ do 
+      it "fails if no target" $ do
+        put "/0" barbUpdate0  -- reset
+        patch "/0" [scim|{
+        }|] `shouldRespondWith` 200
+      it "deletes the specified attribute" $ do
+        put "/0" barbUpdate0  -- reset
+        patch "/0" [scim|{
+        }|] `shouldRespondWith` 200
+
   describe "DELETE /Users/:id" $ do
     it "responds with 404 for unknown user" $ do
       delete "/9999" `shouldRespondWith` 404

@@ -85,7 +85,7 @@ spConfig = [scim|
          "maxPayloadSize":0,
          "supported":false
         },
- "patch":{"supported":false},
+ "patch":{"supported":true},
  "authenticationSchemes":[
    {"type":"httpbasic",
     "name":"HTTP Basic",
