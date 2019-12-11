@@ -1,0 +1,57 @@
+Add:
+   o  If omitted, the target location is assumed to be the resource
+      itself.  The "value" parameter contains a set of attributes to be
+      added to the resource.
+
+   o  If the target location does not exist, the attribute and value are
+      added.
+
+   # What we do here is totally unclear to me. 
+   # But what I think is sane is the following:
+   #  sub-attributes of complex attributes can only be 'simple'
+   #  so we simply replace each of the sub-attributes
+   #  Not affecting non-specified attributes
+   o  If the target location specifies a complex attribute, a set of
+      sub-attributes SHALL be specified in the "value" parameter.
+
+   o  If the target location specifies a multi-valued attribute, a new
+      value is added to the attribute.
+
+   o  If the target location specifies a single-valued attribute, the
+      existing value is replaced.
+
+   # This is a duplicate of the second rule
+   # o  If the target location specifies an attribute that does not exist
+   #   (has no value), the attribute is added with the new value.
+
+   #  Probably a mistake in the spec
+   # o  If the target location exists, the value is replaced.
+
+   o  If the target location already contains the value specified, no
+      changes SHOULD be made to the resource, and a success response
+      SHOULD be returned.  Unless other operations change the resource,
+      this operation SHALL NOT change the modify timestamp of the
+      resource.
+
+
+
+
+Add ~  recursive merge of records, and if lists, concatenate, otherwise replace
+
+  pairwise monoid of tuples of   Maybe ([] | Last)
+
+
+
+  instance Semigroup a => Monoid (Maybe a)
+
+
+  
+
+
+Replace ~ recursive merge of records, and always replace
+  pairwise monoid of tuples over Maybe Last
+
+  except we also take some funky filters over the lists, in which case
+  we only apply them to the list elements that match the predicate
+
+
