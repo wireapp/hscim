@@ -81,7 +81,7 @@ instance FromJSON PatchOp where
 instance FromJSON Operation where
   parseJSON = withObject "Operation" $ \v -> do
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
-    Operation <$> (o .: "op") <*> (o .: "path") <*> (o .:? "value")
+    Operation <$> (o .: "op") <*> (o .:? "path") <*> (o .:? "value")
 
     
 

@@ -84,7 +84,7 @@ microsoftAzure app = do
             "itemsPerPage": 0
           }
         |] { matchStatus = 200 }
-      xit "Update user [Multi-valued properties" $ do
+      xit "Update user [Multi-valued properties]" $ do
         patch' "/Users/0" [scim|
             {
               "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
@@ -102,12 +102,6 @@ microsoftAzure app = do
               ]
             }
         |] `shouldRespondWith` 200
-        -- TODO match body
-      describe "Partial PUT does not reset fields" $ do
-        it "partial put" $ put' "/Users/0"
-          [scim|
-            { "displayName": "arian" }
-          |] `shouldRespondWith` 200
       describe "Update user [Single-valued properties]" $ do
         it "replace userName" $ patch' "/Users/0"
           [scim|
