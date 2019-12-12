@@ -328,29 +328,3 @@ isUserSchema :: Maybe Schema -> Bool
 isUserSchema Nothing = True
 isUserSchema (Just User20) = True
 isUserSchema _ = False
-
-
-{-
-data NameField y where
-  FirstName :: NameField "firstName" 
-
--- | Used to statically reflect on the user label
-data UserField x y where
-  UserName :: UserField "userName" y
-  ExternalId :: UserField "externalId" y
-  Name :: Maybe (NameField y) -> UserField "name" y
-  DisplayName :: UserField "displayName" y
-
-
-
-data UserPatchOp tag x y a where
-  Add :: HasField x (User tag) a => UserField x y -> a -> UserPatchOp tag x y a
-  Replace :: HasField x (User tag) a => UserField x y -> a -> UserPatchOp tag x y a
-  Remove :: HasField x (User tag) a => UserField x y -> UserPatchOp tag x y a
-
-
-
-applyUserPatchOp :: UserPatchOp tag x y a -> User tag -> Maybe (User tag)
-applyUserPatchOp = _
-
--}
