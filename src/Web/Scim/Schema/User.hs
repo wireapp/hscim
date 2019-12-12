@@ -160,7 +160,7 @@ empty schemas extra = User
   , extra = extra
   }
 
-
+-- TODO(arianvp): We shoul
 instance FromJSON (UserExtra tag) => FromJSON (User tag) where
   parseJSON = withObject "User" $ \obj -> do
     -- Lowercase all fields

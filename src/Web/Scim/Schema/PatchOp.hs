@@ -8,7 +8,7 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.Text (toCaseFold, toLower, Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Bifunctor (first)
-import Data.Attoparsec.ByteString (Parser, parseOnly)
+import Data.Attoparsec.ByteString (Parser, parseOnly, endOfInput)
 import Web.Scim.Filter (AttrPath(..), ValuePath(..), SubAttr(..), pAttrPath, pValuePath, pSubAttr, rAttrPath, rSubAttr, rValuePath)
 import Data.Maybe (fromMaybe)
 
@@ -53,9 +53,12 @@ data Path
   deriving (Eq, Show)
 
 instance  FromJSON Path where
-  parseJSON = withText "Path" $ \v -> case parseOnly pPath (encodeUtf8 v) of
+  parseJSON = withText "Path" $ \v -> case parsePath v of
     Left x -> fail x
     Right x -> pure x
+
+parsePath :: Text -> Either String Path
+parsePath = parseOnly (pPath <* endOfInput) . encodeUtf8
 
 -- | PATH = attrPath / valuePath [subAttr]
 pPath :: Parser Path
@@ -67,7 +70,9 @@ rPath :: Path -> Text
 rPath (NormalPath attrPath) = rAttrPath attrPath
 rPath (IntoValuePath valuePath subAttr) = rValuePath valuePath <> fromMaybe "" (rSubAttr <$> subAttr)
 
-
+-- TODO(arianvp): According to the SCIM spec we should throw an InvalidPath
+-- error when the path is invalid syntax. this is a bit hard to do though as we
+-- can't control what errors FromJSON throws :/
 instance FromJSON PatchOp where
   parseJSON = withObject "PatchOp" $ \v -> do
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
