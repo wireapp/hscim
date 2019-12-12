@@ -68,6 +68,7 @@ spec = beforeAll app $ do
     it "does not create new users" $ do
       put "/9999" newBarbara `shouldRespondWith` 404
 
+  -- TODO(arianvp): Perhaps we want to make this an acceptance spec.
   describe "PATCH /Users/:id" $ do
     describe "Add" $ do
       -- TODO(arianvp): Implement and test multi-value fields properly
