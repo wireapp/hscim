@@ -30,7 +30,7 @@ data Operation = Operation
 
 -- The "path" attribute value is a String containing an attribute path
 -- describing the target of the operation.  The "path" attribute is OPTIONAL
--- for "add" and "replace" and is REQUIRED for "remove operations.  See
+-- for "add" and "replace" and is REQUIRED for "remove" operations.  See
 -- relevant operation sections below for details.
 data Op
   = Add
