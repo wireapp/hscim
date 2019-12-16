@@ -188,12 +188,6 @@ instance FromJSON (UserExtra tag) => FromJSON (User tag) where
     entitlements <- o .:? "entitlements" .!= []
     roles <- o .:? "roles" .!= []
     x509Certificates <- o .:? "x509certificates" .!= []
-
-    -- NOTE: We pass in the _original_ object. This is because
-    -- our schema URN parser is currently case-sensitive (Eventhough SCIM
-    -- mandates we should be case-insensitive).
-    -- This means we're not fully compliant here
-    -- TODO(arianvp): Think of making URN parsing case-insensitive
     extra <- parseJSON (Object obj)
     pure User{..}
 
