@@ -23,7 +23,6 @@ genPath = Gen.choice
   , NormalPath <$> genAttrPath
   ]
 
---TODO(arianvp): We don't support arbitrary path names (yet)
 prop_roundtrip :: Property
 prop_roundtrip = property $ do
   x <- forAll genPath
