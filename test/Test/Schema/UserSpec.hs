@@ -61,7 +61,6 @@ spec = do
       toJSON minimalUser `shouldBe` minimalUserJson
       eitherDecode (encode minimalUserJson) `shouldBe` Right minimalUser
 
-    -- TODO(arianvp): BUG. It should _not_ do that in the case of PUT and PATCH
     it "treats 'null' and '[]' as absence of fields" $
       eitherDecode (encode minimalUserJsonRedundant) `shouldBe` Right minimalUser
 
