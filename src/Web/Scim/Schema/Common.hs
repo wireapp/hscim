@@ -47,7 +47,7 @@ serializeOptions = defaultOptions
   , fieldLabelModifier = toKeyword
   }
 
--- | Turn all keys in a JSON object to a case-folded version.
+-- | Turn all keys in a JSON object to lowercase.
 jsonLower :: Value -> Value
 jsonLower (Object o) = Object . HM.fromList . fmap lowerPair . HM.toList $ o
   where lowerPair (key, val) = (fromKeyword . toLower $ key, val)
