@@ -84,6 +84,8 @@ microsoftAzure app = do
             "itemsPerPage": 0
           }
         |] { matchStatus = 200 }
+      it "Get user by externalId works" $ do
+        get' "/Users?filter externalId eq \"0a21f0f2-8d2a-4f8e-479e-a20b-2d77186b5dd1\"" `shouldRespondWith` 200
       xit "Update user [Multi-valued properties]" $ do
         patch' "/Users/0" [scim|
             {
