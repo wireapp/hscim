@@ -103,10 +103,9 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
   --
   --  SCIM's Patch semantics are hard to get right. So we advice using the library
   --  built-in implementation.
-  -- Because our PUT currently still has some issues (https://github.com/wireapp/hscim/issues/2),
-  -- we implement PATCH in terms of a GET followed by a PUT.  GET will retrieve the entire record;
-  -- we then modify this record by a series of PATCH operations, and then PUT the entire record.
-  -- We thus always provide _all_ fields in PUT, eventhough we could be more 'smart' about it. 
+  --  we implement PATCH in terms of a GET followed by a PUT.  GET will retrieve the entire record;
+  --  we then modify this record by a series of PATCH operations, and then PUT the entire record.
+  -- 
   patchUser
     :: AuthInfo tag
     -> UserId tag
