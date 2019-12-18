@@ -3,7 +3,7 @@ module Web.Scim.Schema.PatchOp where
 import Control.Applicative
 import Control.Monad (guard)
 import Web.Scim.Schema.Schema (Schema(PatchOp20))
-import Data.Aeson.Types (Value, withText, FromJSON(parseJSON), withObject, (.:), (.:?), Value)
+import Data.Aeson.Types (withText, ToJSON(toJSON), object, (.=), FromJSON(parseJSON), withObject, (.:), (.:?), Value(String))
 import qualified Data.HashMap.Strict as HashMap
 import Data.Text (toCaseFold, toLower, Text)
 import Data.Text.Encoding (encodeUtf8)
@@ -14,7 +14,7 @@ import Data.Maybe (fromMaybe)
 
 newtype PatchOp = PatchOp
   { getOperations :: [Operation] }
-  deriving Show
+  deriving (Eq, Show)
     
 -- TODO(arianvp):  When value is an array, it needs special handling.
 -- e.g. primary fields need to be negated and whatnot. 
@@ -26,7 +26,7 @@ data Operation = Operation
   { op :: Op 
   , path :: Maybe Path
   , value :: Maybe Value
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- The "path" attribute value is a String containing an attribute path
 -- describing the target of the operation.  The "path" attribute is OPTIONAL
@@ -36,15 +36,7 @@ data Op
   = Add
   | Replace 
   | Remove
-  deriving Show
-
-instance FromJSON Op where
-  parseJSON = withText "Op" $ \op' ->
-    case toCaseFold op' of
-      "add" -> pure Add
-      "replace" -> pure Replace
-      "remove" -> pure Remove
-      _ -> fail "unknown operation"
+  deriving (Eq, Show, Enum, Bounded)
 
 -- | PATH = attrPath / valuePath [subAttr]
 data Path
@@ -52,10 +44,6 @@ data Path
   | IntoValuePath ValuePath (Maybe SubAttr)
   deriving (Eq, Show)
 
-instance  FromJSON Path where
-  parseJSON = withText "Path" $ \v -> case parsePath v of
-    Left x -> fail x
-    Right x -> pure x
 
 parsePath :: Text -> Either String Path
 parsePath = parseOnly (pPath <* endOfInput) . encodeUtf8
@@ -70,6 +58,7 @@ rPath :: Path -> Text
 rPath (NormalPath attrPath) = rAttrPath attrPath
 rPath (IntoValuePath valuePath subAttr) = rValuePath valuePath <> fromMaybe "" (rSubAttr <$> subAttr)
 
+
 -- TODO(arianvp): According to the SCIM spec we should throw an InvalidPath
 -- error when the path is invalid syntax. this is a bit hard to do though as we
 -- can't control what errors FromJSON throws :/
@@ -81,6 +70,12 @@ instance FromJSON PatchOp where
     operations <- o .: "operations"
     pure $ PatchOp operations
 
+instance ToJSON PatchOp where
+  toJSON (PatchOp operations) =
+    object [ "operations" .=  operations , "schemas" .= [PatchOp20] ]
+      
+
+
 
 -- NOTE: Azure wants us to be case-insensitive on _values_ as well here
 instance FromJSON Operation where
@@ -88,6 +83,35 @@ instance FromJSON Operation where
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
     Operation <$> (o .: "op") <*> (o .:? "path") <*> (o .:? "value")
 
-    
+instance ToJSON Operation where
+  toJSON (Operation op' path' value') = 
+    object $ ("op" .= op') : concat [optionalField "path" path', optionalField "value" value']
+    where
+      optionalField fname = \case
+        Nothing -> []
+        Just x  -> [fname .= x]
 
+
+instance FromJSON Op where
+  parseJSON = withText "Op" $ \op' ->
+    case toCaseFold op' of
+      "add" -> pure Add
+      "replace" -> pure Replace
+      "remove" -> pure Remove
+      _ -> fail "unknown operation"
+
+instance ToJSON Op where
+  toJSON Add = String "add"
+  toJSON Replace = String "replace"
+  toJSON Remove = String "remove"
+  
+
+instance  FromJSON Path where
+  parseJSON = withText "Path" $ \v -> case parsePath v of
+    Left x -> fail x
+    Right x -> pure x
+
+instance ToJSON Path where
+  toJSON = String . rPath
+    
 

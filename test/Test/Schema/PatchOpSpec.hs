@@ -5,17 +5,30 @@ import Test.Hspec (Spec, describe, xit, it, shouldSatisfy, shouldBe)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Web.Scim.Test.Util (scim)
 import Web.Scim.Schema.PatchOp
-import Data.Aeson.Types (fromJSON, Result(Success, Error))
+import Data.Aeson.Types (toJSON, fromJSON, Result(Success, Error), Value(String))
 import Data.Attoparsec.ByteString (parseOnly)
 import HaskellWorks.Hspec.Hedgehog (require)
 import Hedgehog (Gen, tripping, forAll, Property, property)
 import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 import Test.FilterSpec (genValuePath, genAttrPath, genSubAttr)
 import Data.Either (isLeft, isRight)
 
 isSuccess :: Result a -> Bool
 isSuccess (Success _) = True
 isSuccess (Error _) = False
+
+genPatchOp :: Gen PatchOp
+genPatchOp = PatchOp <$> Gen.list (Range.constant 0 20) genOperation
+
+-- Just some strings for now. However, should be constrained to what the
+-- PatchOp is operating on in the future... We need better typed PatchOp for
+-- this. TODO(arianvp)
+genValue :: Gen Value
+genValue = String <$> Gen.text (Range.constant 0 20) Gen.unicode
+
+genOperation :: Gen Operation
+genOperation = Operation <$> Gen.enumBounded <*> Gen.maybe genPath <*> Gen.maybe genValue
 
 genPath :: Gen Path
 genPath = Gen.choice
@@ -27,6 +40,11 @@ prop_roundtrip :: Property
 prop_roundtrip = property $ do
   x <- forAll genPath
   tripping x (encodeUtf8 . rPath) (parseOnly pPath)
+
+prop_roundtrip_PatchOp :: Property
+prop_roundtrip_PatchOp = property $ do
+  x <- forAll genPatchOp
+  tripping x toJSON fromJSON
   
 spec :: Spec
 spec = do
@@ -38,7 +56,8 @@ spec = do
           "operations": []
         }|] `shouldSatisfy`  (not . isSuccess)
     --TODO(arianvp): We don't support arbitrary path names (yet)
-    it "roundtrips" $ require prop_roundtrip
+    it "roundtrips Path" $ require prop_roundtrip
+    it "roundtrips PatchOp" $ require prop_roundtrip_PatchOp
     it "rejects invalid operations" $ do
       fromJSON @PatchOp [scim| {
           "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
