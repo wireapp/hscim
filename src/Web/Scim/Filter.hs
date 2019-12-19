@@ -40,6 +40,7 @@ module Web.Scim.Filter
   , rValuePath
   , rSubAttr
   , compareStr
+  , topLevelAttrPath
   ) where
 
 import Data.String
@@ -128,6 +129,11 @@ newtype SubAttr = SubAttr AttrName
 -- | attrPath  = [URI ":"] ATTRNAME *1subAtt
 data AttrPath = AttrPath (Maybe Schema) AttrName (Maybe SubAttr)
   deriving (Eq, Show)
+
+
+-- | Smart constructor that refers to a toplevel field with default schema
+topLevelAttrPath :: Text -> AttrPath
+topLevelAttrPath x = AttrPath Nothing (attrName x) Nothing
 
 -- | PATH = attrPath / valuePath [subAttr]
 --

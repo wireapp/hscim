@@ -18,17 +18,11 @@ isSuccess :: Result a -> Bool
 isSuccess (Success _) = True
 isSuccess (Error _) = False
 
-genPatchOp :: Gen PatchOp
-genPatchOp = PatchOp <$> Gen.list (Range.constant 0 20) genOperation
+genPatchOp :: Gen Value -> Gen PatchOp
+genPatchOp genValue = PatchOp <$> Gen.list (Range.constant 0 20) (genOperation genValue)
 
--- Just some strings for now. However, should be constrained to what the
--- PatchOp is operating on in the future... We need better typed PatchOp for
--- this. TODO(arianvp)
-genValue :: Gen Value
-genValue = String <$> Gen.text (Range.constant 0 20) Gen.unicode
-
-genOperation :: Gen Operation
-genOperation = Operation <$> Gen.enumBounded <*> Gen.maybe genPath <*> Gen.maybe genValue
+genOperation :: Gen Value -> Gen Operation
+genOperation genValue = Operation <$> Gen.enumBounded <*> Gen.maybe genPath <*> Gen.maybe genValue
 
 genPath :: Gen Path
 genPath = Gen.choice
@@ -43,7 +37,10 @@ prop_roundtrip = property $ do
 
 prop_roundtrip_PatchOp :: Property
 prop_roundtrip_PatchOp = property $ do
-  x <- forAll genPatchOp
+  -- Just some strings for now. However, should be constrained to what the
+  -- PatchOp is operating on in the future... We need better typed PatchOp for
+  -- this. TODO(arianvp)
+  x <- forAll (genPatchOp (String <$> Gen.text (Range.constant 0 20) Gen.unicode))
   tripping x toJSON fromJSON
   
 spec :: Spec

@@ -3,9 +3,9 @@
 -- implementation is compatible with popular SCIM 2.0 providers
 module Web.Scim.Test.Acceptance where
 
-import Web.Scim.Test.Util (scim, get', put', post', patch', delete')
+import Web.Scim.Test.Util (scim, get', post', patch', delete')
 import Test.Hspec (Spec, xit, it, shouldBe, beforeAll, pending, describe,)
-import Test.Hspec.Wai (shouldRespondWith,  matchStatus, matchBody)
+import Test.Hspec.Wai (shouldRespondWith,  matchStatus)
 import Network.Wai (Application)
 
 
