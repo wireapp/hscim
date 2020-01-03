@@ -37,7 +37,6 @@ instance ToJSONKey AttrName where
 instance FromJSONKey AttrName where
 
 -- | Attribute name parser.
--- NOTE: Normalizes the attribute name using Data.Text.toCaseFold
 pAttrName :: Parser AttrName
 pAttrName =
   (\c str -> AttrName (cons c (decodeUtf8 str))) 
