@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Scim attribute names. these are case-insensitive
 module Web.Scim.AttrName where
 
@@ -5,14 +6,17 @@ import Prelude hiding (takeWhile)
 import Data.Text (Text, toCaseFold, cons)
 import Data.Text.Encoding (decodeUtf8)
 import Data.String (IsString, fromString)
-import Data.Aeson.Types (ToJSON, FromJSON, ToJSONKey, FromJSONKey, toJSON, parseJSON)
+import Data.Aeson.Types (ToJSONKey, FromJSONKey)
 import Data.Attoparsec.ByteString.Char8
 import Data.Hashable 
+
 -- | An attribute (e.g. username).
 --
 -- ATTRNAME  = ALPHA *(nameChar)
+-- NOTE: We use the FromJSONKey instance of Text. The default instances parses
+-- a list of key values instead of a map
 newtype AttrName
-  = AttrName Text deriving (Show)
+  = AttrName Text deriving (Show, FromJSONKey, ToJSONKey)
 
 instance Eq AttrName where
   AttrName a == AttrName b = toCaseFold a == toCaseFold b
@@ -25,16 +29,6 @@ instance Hashable AttrName where
 
 instance IsString AttrName where
   fromString = AttrName . fromString
-
-instance ToJSON AttrName where
-  toJSON (AttrName a) = toJSON a
-
-instance FromJSON AttrName where
-  parseJSON x = AttrName <$> parseJSON x
-
-instance ToJSONKey AttrName where
-
-instance FromJSONKey AttrName where
 
 -- | Attribute name parser.
 pAttrName :: Parser AttrName
