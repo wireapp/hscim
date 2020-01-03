@@ -3,6 +3,7 @@
 module Test.FilterSpec where
 
 import           Web.Scim.Filter
+import           Web.Scim.AttrName
 import           Web.Scim.Schema.Schema (Schema(User20, Group20))
 
 import           Test.Hspec
@@ -55,7 +56,7 @@ genAttrPath :: Gen AttrPath
 genAttrPath = AttrPath <$> Gen.maybe genSchema <*> genAttrName  <*> Gen.maybe genSubAttr
 
 genAttrName :: Gen AttrName
-genAttrName = attrName <$> (cons <$> Gen.alpha <*> Gen.text (Range.constant 0 50) (Gen.choice [Gen.alphaNum, Gen.constant '-', Gen.constant '_']))
+genAttrName = AttrName <$> (cons <$> Gen.alpha <*> Gen.text (Range.constant 0 50) (Gen.choice [Gen.alphaNum, Gen.constant '-', Gen.constant '_']))
 
 genFilter :: Gen Filter
 genFilter = Gen.choice

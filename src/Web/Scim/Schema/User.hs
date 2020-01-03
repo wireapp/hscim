@@ -47,17 +47,15 @@
 --
 module Web.Scim.Schema.User where
 
-import Data.Dynamic
 import Control.Monad (foldM)
 import Data.Text (Text, pack, toLower, toCaseFold)
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import Lens.Micro 
 
-import Web.Scim.Filter (Filter(..), AttrPath(..), rAttrName, compareStr, CompValue(..))
+import Web.Scim.Filter (Filter(..), AttrPath(..), compareStr, CompValue(..))
 import Web.Scim.Schema.Common
 import Web.Scim.Schema.Schema (Schema(..))
--- import Web.Scim.Schema.PatchOp (Path(..), PatchOp, Op(..), Operation(Operation), getOperations)
 import Web.Scim.Schema.User.Address (Address)
 import Web.Scim.Schema.User.Certificate (Certificate)
 import Web.Scim.Schema.User.Email (Email)
@@ -124,11 +122,10 @@ data User tag = User
   -- FUTUREWORK: make it easy for hscim users to implement a proper parser (with correct
   -- rendering of optional and multivalued fields, lowercase objects, etc).
   , extra :: UserExtra tag
-  } deriving (Generic, Typeable)
+  } deriving (Generic)
 
 deriving instance Show (UserExtra tag) => Show (User tag)
 deriving instance Eq (UserExtra tag) => Eq (User tag)
-
 
 
 empty
@@ -160,7 +157,6 @@ empty schemas extra = User
   , extra = extra
   }
 
--- TODO(arianvp): We shoul
 instance FromJSON (UserExtra tag) => FromJSON (User tag) where
   parseJSON = withObject "User" $ \obj -> do
     -- Lowercase all fields
@@ -270,9 +266,12 @@ applyOperation user (Operation Add path value) = applyOperation user (Operation 
 
 applyOperation user (Operation Replace (Just (NormalPath (AttrPath _schema attr _subAttr))) (Just value)) = do
   case attr of
-    "username" -> (\x -> user { userName = x }) <$> resultToScimError (fromJSON value)
-    "displayname" -> (\x -> user { displayName = x }) <$> resultToScimError (fromJSON value)
-    "externalid" -> (\x -> user { externalId = x }) <$> resultToScimError (fromJSON value)
+    "username" ->
+      (\x -> user { userName = x }) <$> resultToScimError (fromJSON value)
+    "displayname" ->
+      (\x -> user { displayName = x }) <$> resultToScimError (fromJSON value)
+    "externalid" -> 
+      (\x -> user { externalId = x }) <$> resultToScimError (fromJSON value)
     -- NOTE: unsupported fields we silently ignore to not shoot ourselves in the foot
     -- TODO(arianvp): This makes our impl slightly buggy. But move fast and break things and all that
     _ -> pure user 
@@ -308,9 +307,9 @@ filterUser :: Filter -> User extra -> Either Text Bool
 filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
   | isUserSchema schema =
       case (subAttr, val) of
-        (Nothing, (ValString str)) | rAttrName attrib == "username" ->
+        (Nothing, (ValString str)) | attrib == "userName" ->
           Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
-        (Nothing, _) | rAttrName attrib == "username" ->
+        (Nothing, _) | attrib == "userName" ->
           Left "usernames can only be compared with strings"
         (_, _) ->
           Left "Only search on usernames is currently supported"

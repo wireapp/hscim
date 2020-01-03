@@ -12,7 +12,6 @@ import Hedgehog (Gen, tripping, forAll, Property, property)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Test.FilterSpec (genValuePath, genAttrPath, genSubAttr)
-import Data.Either (isLeft, isRight)
 
 isSuccess :: Result a -> Bool
 isSuccess (Success _) = True

@@ -25,18 +25,14 @@ module Web.Scim.Filter
   -- * Constructing filters
   , CompValue(..)
   , CompareOp(..)
-  , AttrName
-  , attrName
   , AttrPath(..)
   , ValuePath(..)
   , SubAttr(..)
   , pAttrPath
-  , pAttrName
   , pValuePath
   , pSubAttr
   , pFilter
   , rAttrPath
-  , rAttrName
   , rValuePath
   , rSubAttr
   , compareStr
@@ -47,8 +43,8 @@ import Data.String
 import Prelude hiding (takeWhile)
 import Control.Applicative(optional)
 import Data.Scientific
-import Data.Text (Text, cons, pack, toLower, isInfixOf, isPrefixOf, isSuffixOf)
-import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Data.Text (Text, pack, isInfixOf, isPrefixOf, isSuffixOf)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Text.Lazy (toStrict)
 import Data.Attoparsec.ByteString.Char8
 import Data.Aeson.Parser as Aeson
@@ -59,6 +55,7 @@ import Lens.Micro
 import Web.HttpApiData
 
 import Web.Scim.Schema.Schema (getSchemaUri, Schema, pSchema)
+import Web.Scim.AttrName
 
 ----------------------------------------------------------------------------
 -- Types
@@ -85,19 +82,6 @@ data CompareOp
   | OpLt            -- ^ Less than
   | OpLe            -- ^ Less than or equal to
   deriving (Eq, Ord, Show, Enum, Bounded)
-
--- | An attribute (e.g. username).
---
--- ATTRNAME  = ALPHA *(nameChar)
--- TODO(arianvp): Actually implement the grammar here, instead of a whitelist of attributes.
-newtype AttrName
-  = AttrName Text deriving (Eq, Ord, Show)
-
-instance IsString AttrName where
-  fromString = attrName . fromString
-
-attrName :: Text -> AttrName
-attrName = AttrName . toLower
 
 -- | A filter.
 --
@@ -133,7 +117,7 @@ data AttrPath = AttrPath (Maybe Schema) AttrName (Maybe SubAttr)
 
 -- | Smart constructor that refers to a toplevel field with default schema
 topLevelAttrPath :: Text -> AttrPath
-topLevelAttrPath x = AttrPath Nothing (attrName x) Nothing
+topLevelAttrPath x = AttrPath Nothing (AttrName x) Nothing
 
 -- | PATH = attrPath / valuePath [subAttr]
 --
@@ -213,11 +197,6 @@ pCompareOp = choice
   , OpLe <$ stringCI "le"
   ]
 
--- | Attribute name parser.
--- NOTE: Normalizes the attribute name using Data.Text.toCaseFold
-pAttrName :: Parser AttrName
-pAttrName = (\c str -> attrName (cons c (decodeUtf8 str))) <$> letter_ascii <*> takeWhile (\x -> isDigit x || isAlpha_ascii x || x == '-' || x == '_')
-
 -- | Filter parser.
 pFilter :: Parser Filter
 pFilter = choice
@@ -271,11 +250,6 @@ rCompareOp = \case
 -- | SubAttr renderer
 rSubAttr :: SubAttr -> Text
 rSubAttr (SubAttr x) = "." <> (rAttrName x)
-
--- | Attribute name renderer.
-rAttrName :: AttrName -> Text
-rAttrName (AttrName x) = x
-
 
 -- | Execute a comparison operator.
 compareStr :: CompareOp -> Text -> Text -> Bool
