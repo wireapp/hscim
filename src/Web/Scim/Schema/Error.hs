@@ -13,7 +13,6 @@ module Web.Scim.Schema.Error
   , unauthorized
   , forbidden
   , serverError
-  , unimplemented
 
   -- * Servant interoperability
   , scimToServantErr
@@ -148,18 +147,6 @@ serverError details =
     , scimType = Nothing
     , detail = pure details
     }
-
-unimplemented
-  :: Text         -- ^ Error details
-  -> ScimError
-unimplemented details =
-  ScimError
-    { schemas = [Error2_0]
-    , status = Status 501
-    , scimType = Nothing
-    , detail = pure details
-    }
-
 
 ----------------------------------------------------------------------------
 -- Servant
