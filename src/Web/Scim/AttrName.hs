@@ -7,6 +7,7 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.String (IsString, fromString)
 import Data.Aeson.Types (ToJSON, FromJSON, ToJSONKey, FromJSONKey, toJSON, parseJSON)
 import Data.Attoparsec.ByteString.Char8
+import Data.Hashable 
 -- | An attribute (e.g. username).
 --
 -- ATTRNAME  = ALPHA *(nameChar)
@@ -15,6 +16,12 @@ newtype AttrName
 
 instance Eq AttrName where
   AttrName a == AttrName b = toCaseFold a == toCaseFold b
+
+instance Ord AttrName where
+  compare (AttrName a) (AttrName b) = compare (toCaseFold a) (toCaseFold b)
+
+instance Hashable AttrName where
+  hashWithSalt x (AttrName a) = hashWithSalt x (toCaseFold a)
 
 instance IsString AttrName where
   fromString = AttrName . fromString
