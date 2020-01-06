@@ -177,8 +177,6 @@ pCompValue = choice
   ]
 
 -- | Comparison operator parser.
---
--- TODO: Replace with asciiCI
 pCompareOp :: Parser CompareOp
 pCompareOp = choice
   [ OpEq <$ stringCI "eq"
