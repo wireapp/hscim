@@ -51,7 +51,7 @@ getSchemaUri PatchOp20 =
 getSchemaUri (CustomSchema x) =
   x
 
--- | Parsers known schemas. Fails on unknown schemas (E.g. CustomSchema escape hatch doesn't work)
+-- | Parser for known schemas. Fails on unknown schemas (E.g. CustomSchema escape hatch doesn't work)
 --
 -- NOTE: according to the spec, this parser needs to be case insensitive, but
 -- that is literally insane. Won't implement.
