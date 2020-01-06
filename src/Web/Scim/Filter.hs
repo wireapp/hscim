@@ -133,9 +133,23 @@ topLevelAttrPath x = AttrPath Nothing (AttrName x) Nothing
 ----------------------------------------------------------------------------
 -- Parsing
 
--- | ATTRNAME  = ALPHA *(nameChar)
+-- | Parse a filter. Spaces surrounding the filter will be stripped.
+--
+-- If parsing fails, returns a 'Left' with an error description.
+--
+-- Note: this parser is written with Attoparsec because I don't know how to
+-- lift an Attoparsec parser (from Aeson) to Megaparsec
+parseFilter :: Text -> Either Text Filter
+parseFilter =
+  over _Left pack .
+  parseOnly (skipSpace *> pFilter <* skipSpace <* endOfInput) .
+  encodeUtf8
 
--- | attrPath  = [URI ":"] ATTRNAME *1subAtt
+-- |
+-- @
+-- ATTRNAME  = ALPHA *(nameChar)
+-- attrPath  = [URI ":"] ATTRNAME *1subAtt
+-- @
 pAttrPath :: Parser AttrPath
 pAttrPath =
   AttrPath
@@ -151,24 +165,6 @@ pSubAttr = char '.' *> (SubAttr <$> pAttrName)
 pValuePath :: Parser ValuePath
 pValuePath =
   ValuePath <$> pAttrPath <*> (char '[' *> pFilter <* char ']')
-
-rValuePath :: ValuePath -> Text
-rValuePath (ValuePath attrPath filter') = rAttrPath attrPath <> "[" <> renderFilter filter' <> "]"
-
-
--- Note: this parser is written with Attoparsec because I don't know how to
--- lift an Attoparsec parser (from Aeson) to Megaparsec
-
--- | Parse a filter. Spaces surrounding the filter will be stripped.
---
--- If parsing fails, returns a 'Left' with an error description.
-parseFilter :: Text -> Either Text Filter
-parseFilter =
-  over _Left pack .
-  parseOnly (skipSpace *> pFilter <* skipSpace <* endOfInput) .
-  encodeUtf8
-
--- parser pieces
 
 -- | Value literal parser.
 pCompValue :: Parser CompValue
@@ -224,6 +220,12 @@ rAttrPath :: AttrPath -> Text
 rAttrPath (AttrPath schema attr subAttr)
   =  fromMaybe "" ((<> ":") . getSchemaUri <$> schema) <> rAttrName attr <> fromMaybe "" (rSubAttr <$> subAttr)
 
+rSubAttr :: SubAttr -> Text
+rSubAttr (SubAttr x) = "." <> (rAttrName x)
+
+rValuePath :: ValuePath -> Text
+rValuePath (ValuePath attrPath filter') = rAttrPath attrPath <> "[" <> renderFilter filter' <> "]"
+
 -- | Value literal renderer.
 rCompValue :: CompValue -> Text
 rCompValue = \case
@@ -245,10 +247,6 @@ rCompareOp = \case
   OpGe -> "ge"
   OpLt -> "lt"
   OpLe -> "le"
-
--- | SubAttr renderer
-rSubAttr :: SubAttr -> Text
-rSubAttr (SubAttr x) = "." <> (rAttrName x)
 
 -- | Execute a comparison operator.
 compareStr :: CompareOp -> Text -> Text -> Bool
