@@ -29,7 +29,7 @@ data ListResponse a = ListResponse
 
 fromList :: [a] -> ListResponse a
 fromList list = ListResponse
-  { schemas = [ListResponse2_0]
+  { schemas = [ListResponse20]
   , totalResults = len
   , itemsPerPage = len
   , startIndex = 1

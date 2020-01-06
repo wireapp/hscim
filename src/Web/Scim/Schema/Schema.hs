@@ -18,8 +18,8 @@ data Schema = User20
             | Group20
             | Schema20
             | ResourceType20
-            | ListResponse2_0
-            | Error2_0
+            | ListResponse20
+            | Error20
             | PatchOp20
             | CustomSchema Text
   deriving (Show, Eq)
@@ -42,9 +42,9 @@ getSchemaUri Schema20 =
   "urn:ietf:params:scim:schemas:core:2.0:Schema"
 getSchemaUri ResourceType20 =
   "urn:ietf:params:scim:schemas:core:2.0:ResourceType"
-getSchemaUri ListResponse2_0 =
+getSchemaUri ListResponse20 =
   "urn:ietf:params:scim:api:messages:2.0:ListResponse"
-getSchemaUri Error2_0 =
+getSchemaUri Error20 =
   "urn:ietf:params:scim:api:messages:2.0:Error"
 getSchemaUri PatchOp20 =
   "urn:ietf:params:scim:api:messages:2.0:PatchOp"
@@ -67,9 +67,9 @@ pSchema =
     <$ "urn:ietf:params:scim:schemas:core:2.0:Schema" <|>
   ResourceType20
     <$ "urn:ietf:params:scim:schemas:core:2.0:ResourceType" <|>
-  ListResponse2_0
+  ListResponse20
     <$ "urn:ietf:params:scim:api:messages:2.0:ListResponse" <|>
-  Error2_0
+  Error20
     <$ "urn:ietf:params:scim:api:messages:2.0:Error" <|>
   PatchOp20
     <$ "urn:ietf:params:scim:api:messages:2.0:PatchOp") <?> "unknown schema"
@@ -98,9 +98,9 @@ fromSchemaUri s = case s of
   "urn:ietf:params:scim:schemas:core:2.0:ResourceType" ->
     ResourceType20
   "urn:ietf:params:scim:api:messages:2.0:ListResponse" ->
-    ListResponse2_0
+    ListResponse20
   "urn:ietf:params:scim:api:messages:2.0:Error" ->
-    Error2_0
+    Error20
   "urn:ietf:params:scim:api:messages:2.0:PatchOp" ->
     PatchOp20
   x ->
@@ -120,9 +120,9 @@ getSchema ResourceType20 =
   pure resourceSchema
 -- Schemas for these types are not in the SCIM standard.
 -- FUTUREWORK: write schema definitions anyway.
-getSchema ListResponse2_0 =
+getSchema ListResponse20 =
   Nothing
-getSchema Error2_0 =
+getSchema Error20 =
   Nothing
 getSchema PatchOp20 =
   Nothing
