@@ -225,3 +225,4 @@ filterUser (FilterAttrCompare (AttrPath schema' attrib subAttr) op val) user
 isUserSchema :: Maybe Schema -> Bool
 isUserSchema Nothing = True
 isUserSchema (Just User20) = True
+isUserSchema (Just _) = False
