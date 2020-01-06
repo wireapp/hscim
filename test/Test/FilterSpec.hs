@@ -42,7 +42,7 @@ genCompValue = Gen.choice
   ]
 
 genCompareOp :: Gen CompareOp
-genCompareOp = Gen.boundedEnum
+genCompareOp = Gen.enumBounded
 
 genSubAttr :: Gen SubAttr
 genSubAttr = SubAttr <$> genAttrName
