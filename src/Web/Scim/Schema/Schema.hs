@@ -59,7 +59,7 @@ pSchema :: Parser Schema
 pSchema =
   (User20
     <$ "urn:ietf:params:scim:schemas:core:2.0:User" <|>
-  ServiceProviderConfig20 
+  ServiceProviderConfig20
     <$ "urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig" <|>
   Group20
     <$ "urn:ietf:params:scim:schemas:core:2.0:Group" <|>
@@ -68,9 +68,9 @@ pSchema =
   ResourceType20
     <$ "urn:ietf:params:scim:schemas:core:2.0:ResourceType" <|>
   ListResponse2_0
-    <$ "urn:ietf:params:scim:api:messages:2.0:ListResponse" <|> 
+    <$ "urn:ietf:params:scim:api:messages:2.0:ListResponse" <|>
   Error2_0
-    <$ "urn:ietf:params:scim:api:messages:2.0:Error" <|> 
+    <$ "urn:ietf:params:scim:api:messages:2.0:Error" <|>
   PatchOp20
     <$ "urn:ietf:params:scim:api:messages:2.0:PatchOp") <?> "unknown schema"
 
