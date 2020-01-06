@@ -33,7 +33,7 @@
 --
 -- TODO(arianvp):
 --  Multi-valued attributes actually have some more quirky semantics that we
---  currently' don't support yet. E.g. if the multi-values have a
+--  currently don't support yet. E.g. if the multi-values have a
 --  'primary' field then only one of the entires must have 'primary: true'
 --  and all the others are either implied 'primary: false' or must be checked
 --  that they're false
@@ -254,13 +254,13 @@ resultToScimError :: (MonadError ScimError m) => Result a -> m a
 resultToScimError (Error reason) = throwError $ badRequest InvalidValue (Just (pack reason))
 resultToScimError (Success a) = pure a
 
--- TODO(arianvp): support multi-valuued and complex attributes.
+-- TODO(arianvp): support multi-valued and complex attributes.
 -- TODO(arianvp): Actually do this in some kind of type-safe way. e.g.
--- have a UserPatch type
+-- have a UserPatch type.
 --
 -- What I understand from the spec:  The difference between add an replace is only
 -- in the fact that replace will not concat multi-values, and behaves differently for complex values too.
--- For simple attributes, add and replace are identical
+-- For simple attributes, add and replace are identical.
 applyOperation :: forall m tag. (MonadError ScimError m, FromJSON (UserExtra tag)) =>  User tag  -> Operation -> m (User tag)
 applyOperation user (Operation Add path value) = applyOperation user (Operation Replace path value)
 
@@ -296,7 +296,6 @@ applyOperation user (Operation Remove (Just (NormalPath (AttrPath _schema attr _
     _ -> pure user
 applyOperation _ (Operation Remove (Just (IntoValuePath _ _)) _) = do
   throwError (badRequest InvalidPath (Just "can not lens into multi-valued attributes yet"))
-
 
 
 -- Omission of a schema for users is implicitly the core schema
