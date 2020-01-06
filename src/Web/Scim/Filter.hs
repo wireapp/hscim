@@ -214,8 +214,6 @@ renderFilter filter_ = case filter_ of
   FilterAttrCompare attr op val ->
     rAttrPath attr <> " " <> rCompareOp op <> " " <> rCompValue val
 
--- | Rendering an attribute path
--- TODO(arianvp): Adjust roundtrip test for this one.
 rAttrPath :: AttrPath -> Text
 rAttrPath (AttrPath schema attr subAttr)
   =  fromMaybe "" ((<> ":") . getSchemaUri <$> schema) <> rAttrName attr <> fromMaybe "" (rSubAttr <$> subAttr)
