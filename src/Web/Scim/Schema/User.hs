@@ -132,11 +132,12 @@ deriving instance Eq (UserExtra tag) => Eq (User tag)
 
 empty
   :: [Schema]               -- ^ Schemas
+  -> Text                   -- ^ userName
   -> UserExtra tag          -- ^ Extra data
   -> User tag
-empty schemas extra = User
+empty schemas userName extra = User
   { schemas = schemas
-  , userName = ""
+  , userName = userName 
   , externalId = Nothing
   , name = Nothing
   , displayName = Nothing
