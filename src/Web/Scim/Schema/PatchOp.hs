@@ -16,6 +16,11 @@ newtype PatchOp = PatchOp
   { getOperations :: [Operation] }
   deriving (Eq, Show)
 
+-- | The 'Path' attribute value is a 'String' containing an attribute path
+-- describing the target of the operation.  It is OPTIONAL
+-- for 'Op's "add" and "replace", and is REQUIRED for "remove".  See
+-- relevant operation sections below for details.
+--
 -- TODO(arianvp):  When value is an array, it needs special handling.
 -- e.g. primary fields need to be negated and whatnot.
 -- We currently do not do that :)
@@ -28,10 +33,6 @@ data Operation = Operation
   , value :: Maybe Value
   } deriving (Eq, Show)
 
--- The "path" attribute value is a String containing an attribute path
--- describing the target of the operation.  The "path" attribute is OPTIONAL
--- for "add" and "replace" and is REQUIRED for "remove" operations.  See
--- relevant operation sections below for details.
 data Op
   = Add
   | Replace
@@ -75,9 +76,8 @@ instance ToJSON PatchOp where
     object [ "operations" .=  operations , "schemas" .= [PatchOp20] ]
 
 
-
-
--- NOTE: Azure wants us to be case-insensitive on _values_ as well here
+-- TODO: Azure wants us to be case-insensitive on _values_ as well here.  We currently do not
+-- comply with that.
 instance FromJSON Operation where
   parseJSON = withObject "Operation" $ \v -> do
     let o = HashMap.fromList . map (first toLower) . HashMap.toList $ v
@@ -107,9 +107,7 @@ instance ToJSON Op where
 
 
 instance  FromJSON Path where
-  parseJSON = withText "Path" $ \v -> case parsePath v of
-    Left x -> fail x
-    Right x -> pure x
+  parseJSON = withText "Path" $ either fail pure . parsePath
 
 instance ToJSON Path where
   toJSON = String . rPath
