@@ -138,11 +138,10 @@ topLevelAttrPath x = AttrPath Nothing (AttrName x) Nothing
 -- | attrPath  = [URI ":"] ATTRNAME *1subAtt
 pAttrPath :: Parser AttrPath
 pAttrPath =
-  AttrPath 
+  AttrPath
     <$> (optional (pSchema <* char ':'))
     <*> pAttrName
     <*> optional pSubAttr
-
 
 -- | subAttr   = "." ATTRNAME
 pSubAttr :: Parser SubAttr
