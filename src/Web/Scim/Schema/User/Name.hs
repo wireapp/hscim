@@ -15,12 +15,8 @@ data Name = Name
   , honorificSuffix :: Maybe Text
   } deriving (Show, Eq, Generic)
 
-empty :: Name
-empty = Name Nothing Nothing Nothing Nothing Nothing Nothing
-
 instance FromJSON Name where
   parseJSON = genericParseJSON parseOptions . jsonLower
 
 instance ToJSON Name where
   toJSON = genericToJSON serializeOptions
-
