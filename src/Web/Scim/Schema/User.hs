@@ -48,11 +48,13 @@
 module Web.Scim.Schema.User where
 
 import Control.Monad (foldM)
-import Data.Text (Text, pack, toLower)
 import Data.Aeson
+import Data.List ((\\))
 import qualified Data.HashMap.Strict as HM
+import Data.Text (Text, pack, toLower)
 import Lens.Micro
 
+import Web.Scim.AttrName
 import Web.Scim.Filter (AttrPath(..))
 import Web.Scim.Schema.Common
 import Web.Scim.Schema.Schema (Schema(..))
@@ -276,6 +278,9 @@ applyOperation user (Operation Replace (Just (NormalPath (AttrPath _schema attr 
 applyOperation _ (Operation Replace (Just (IntoValuePath _ _)) _) = do
   throwError (badRequest InvalidPath (Just "can not lens into multi-valued attributes yet"))
 applyOperation user (Operation Replace Nothing (Just value)) = do
+  case value of
+    Object hm | null ((AttrName <$> HM.keys hm) \\ ["username", "displayname", "externalid"]) -> pure ()
+    _ -> throwError (badRequest InvalidPath (Just "we only support attributes username, displayname, externalid"))
   (u :: User tag) <- resultToScimError $ fromJSON value
   pure $ user
     { userName = userName u
