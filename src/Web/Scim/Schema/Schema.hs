@@ -54,7 +54,7 @@ getSchemaUri (CustomSchema x) =
 -- | Parsers known schemas. Fails on unknown schemas (E.g. CustomSchema escape hatch doesn't work)
 --
 -- NOTE: according to the spec, this parser needs to be case insensitive, but
--- that is literally insane. Won't implement
+-- that is literally insane. Won't implement.
 pSchema :: Parser Schema
 pSchema =
   (User20
@@ -75,12 +75,16 @@ pSchema =
     <$ "urn:ietf:params:scim:api:messages:2.0:PatchOp") <?> "unknown schema"
 
 -- | Get a schema by its URI.
--- TODO(arianvp): probably to lenient. want to only accept valid URNs
+--
+-- NOTE: cas sensitive against the spec.  Same as 'pSchema'.
+--
+-- FUTUREWORK: implement this in terms of 'pSchema': parse all the non-custom schemas with
+-- 'pSchema; in case of error, use the parser *input* as the custom schema.
+--
+-- TODO(arianvp): probably too lenient. want to only accept valid URNs
 -- This means the CustomSchema part might go... We need to kind of
 -- rethink how we're  gonna do extensions anyway, as we're gonna have to
 -- support multiple extensions, which is currently a bit iffy I think
---
--- TODO(arianvp): Should be case insensitive
 fromSchemaUri :: Text -> Schema
 fromSchemaUri s = case s of
   "urn:ietf:params:scim:schemas:core:2.0:User" ->
