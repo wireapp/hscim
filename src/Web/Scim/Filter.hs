@@ -51,7 +51,7 @@ import Data.Aeson.Parser as Aeson
 import Data.Aeson.Text as Aeson
 import Data.Aeson as Aeson
 import Data.Maybe (fromMaybe)
-import Lens.Micro 
+import Lens.Micro
 import Web.HttpApiData
 
 import Web.Scim.Schema.Schema (getSchemaUri, Schema, pSchema)
@@ -102,7 +102,7 @@ data Filter
 -- | valuePath = attrPath "[" valFilter "]"
 -- TODO(arianvp): This is a slight simplification at the moment as we
 -- don't support the complete Filter grammar. This should be a
--- valFilter, not a FILTER. 
+-- valFilter, not a FILTER.
 data ValuePath  = ValuePath AttrPath Filter
   deriving (Eq, Show)
 
@@ -123,7 +123,7 @@ topLevelAttrPath x = AttrPath Nothing (AttrName x) Nothing
 --
 -- Currently we don't support matching on lists in paths as
 -- we currently don't support filtering on arbitrary attributes yet
--- e.g. 
+-- e.g.
 -- @
 -- "path":"members[value eq
 --            \"2819c223-7f76-453a-919d-413861904646\"].displayName"
@@ -222,7 +222,7 @@ renderFilter filter_ = case filter_ of
 -- | Rendering an attribute path
 -- TODO(arianvp): Adjust roundtrip test for this one.
 rAttrPath :: AttrPath -> Text
-rAttrPath (AttrPath schema attr subAttr) 
+rAttrPath (AttrPath schema attr subAttr)
   =  fromMaybe "" ((<> ":") . getSchemaUri <$> schema) <> rAttrName attr <> fromMaybe "" (rSubAttr <$> subAttr)
 
 -- | Value literal renderer.
