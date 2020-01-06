@@ -29,7 +29,6 @@ import           Web.Scim.Schema.Error
 import           Web.Scim.Schema.Meta
 import           Web.Scim.Schema.ListResponse
 import           Web.Scim.Schema.ResourceType
-import           Web.Scim.Schema.Schema (Schema(..))
 import           Web.Scim.Schema.Common (WithId(WithId, value))
 import qualified Web.Scim.Schema.Common     as Common
 import           Web.Scim.Handler
@@ -220,9 +219,3 @@ filterUser (FilterAttrCompare (AttrPath schema' attrib subAttr) op val) user
           Left "Only search on usernames is currently supported"
   | otherwise = Left "Invalid schema. Only user schema is supported"
 
--- Omission of a schema for users is implicitly the core schema
--- TODO(arianvp): Link to part of the spec that claims this.
-isUserSchema :: Maybe Schema -> Bool
-isUserSchema Nothing = True
-isUserSchema (Just User20) = True
-isUserSchema (Just _) = False

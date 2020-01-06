@@ -296,3 +296,12 @@ applyOperation user (Operation Remove (Just (NormalPath (AttrPath _schema attr _
     _ -> pure user
 applyOperation _ (Operation Remove (Just (IntoValuePath _ _)) _) = do
   throwError (badRequest InvalidPath (Just "can not lens into multi-valued attributes yet"))
+
+
+
+-- Omission of a schema for users is implicitly the core schema
+-- TODO(arianvp): Link to part of the spec that claims this.
+isUserSchema :: Maybe Schema -> Bool
+isUserSchema Nothing = True
+isUserSchema (Just User20) = True
+isUserSchema (Just _) = False
