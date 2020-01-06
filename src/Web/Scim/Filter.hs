@@ -101,7 +101,7 @@ data Filter
 
 -- | valuePath = attrPath "[" valFilter "]"
 -- TODO(arianvp): This is a slight simplification at the moment as we
--- don't support the complete Filter garmar. This should be a
+-- don't support the complete Filter grammar. This should be a
 -- valFilter, not a FILTER. 
 data ValuePath  = ValuePath AttrPath Filter
   deriving (Eq, Show)
