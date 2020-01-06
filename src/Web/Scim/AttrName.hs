@@ -8,7 +8,7 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.String (IsString, fromString)
 import Data.Aeson.Types (ToJSONKey, FromJSONKey)
 import Data.Attoparsec.ByteString.Char8
-import Data.Hashable 
+import Data.Hashable
 
 -- | An attribute (e.g. username).
 --
@@ -33,8 +33,8 @@ instance IsString AttrName where
 -- | Attribute name parser.
 pAttrName :: Parser AttrName
 pAttrName =
-  (\c str -> AttrName (cons c (decodeUtf8 str))) 
-    <$> letter_ascii 
+  (\c str -> AttrName (cons c (decodeUtf8 str)))
+    <$> letter_ascii
     <*> takeWhile (\x -> isDigit x || isAlpha_ascii x || x == '-' || x == '_')
 
 -- | Attribute name renderer.

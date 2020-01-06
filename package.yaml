@@ -54,7 +54,6 @@ dependencies:
   - microlens
   - mmorph
   - mtl
-  - mtl
   - network-uri
   - network-uri-static >= 0.1.1.0
   - scientific
@@ -74,9 +73,7 @@ dependencies:
   - wai-logger
   - warp
 
-
-
-ghc-options: -Wall
+ghc-options: -Wall -Werror
 
 library:
   source-dirs: src
