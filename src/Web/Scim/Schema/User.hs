@@ -48,12 +48,12 @@
 module Web.Scim.Schema.User where
 
 import Control.Monad (foldM)
-import Data.Text (Text, pack, toLower, toCaseFold)
+import Data.Text (Text, pack, toLower)
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import Lens.Micro
 
-import Web.Scim.Filter (Filter(..), AttrPath(..), compareStr, CompValue(..))
+import Web.Scim.Filter (AttrPath(..))
 import Web.Scim.Schema.Common
 import Web.Scim.Schema.Schema (Schema(..))
 import Web.Scim.Schema.User.Address (Address)
@@ -296,28 +296,3 @@ applyOperation user (Operation Remove (Just (NormalPath (AttrPath _schema attr _
     _ -> pure user
 applyOperation _ (Operation Remove (Just (IntoValuePath _ _)) _) = do
   throwError (badRequest InvalidPath (Just "can not lens into multi-valued attributes yet"))
-
--- | Check whether a user satisfies the filter.
---
--- Returns 'Left' if the filter is constructed incorrectly (e.g. tries to
--- compare a username with a boolean).
---
--- TODO(arianvp): We need to generalise filtering at some point probably.
-filterUser :: Filter -> User extra -> Either Text Bool
-filterUser (FilterAttrCompare (AttrPath schema attrib subAttr) op val) user
-  | isUserSchema schema =
-      case (subAttr, val) of
-        (Nothing, (ValString str)) | attrib == "userName" ->
-          Right (compareStr op (toCaseFold (userName user)) (toCaseFold str))
-        (Nothing, _) | attrib == "userName" ->
-          Left "usernames can only be compared with strings"
-        (_, _) ->
-          Left "Only search on usernames is currently supported"
-  | otherwise = Left "Invalid schema. Only user schema is supported"
-
--- Omission of a schema for users is implicitly the core schema
--- TODO(arianvp): Link to part of the spec that claims this.
-isUserSchema :: Maybe Schema -> Bool
-isUserSchema Nothing = True
-isUserSchema (Just User20) = True
-isUserSchema _ = False
