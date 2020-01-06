@@ -51,7 +51,7 @@ import Control.Monad (foldM)
 import Data.Text (Text, pack, toLower, toCaseFold)
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
-import Lens.Micro 
+import Lens.Micro
 
 import Web.Scim.Filter (Filter(..), AttrPath(..), compareStr, CompValue(..))
 import Web.Scim.Schema.Common
@@ -243,7 +243,7 @@ instance ToJSON NoUserExtra where
 -- Applying
 
 -- | Applies a JSON Patch to a SCIM Core User
--- Only supports the core attributes. 
+-- Only supports the core attributes.
 -- Evenmore, only some hand-picked ones currently.
 -- We'll have to think how patch is going to work in the presence of extensions.
 -- Also, we can probably make  PatchOp type-safe to some extent (Read arianvp's thesis :))
@@ -270,16 +270,16 @@ applyOperation user (Operation Replace (Just (NormalPath (AttrPath _schema attr 
       (\x -> user { userName = x }) <$> resultToScimError (fromJSON value)
     "displayname" ->
       (\x -> user { displayName = x }) <$> resultToScimError (fromJSON value)
-    "externalid" -> 
+    "externalid" ->
       (\x -> user { externalId = x }) <$> resultToScimError (fromJSON value)
     -- NOTE: unsupported fields we silently ignore to not shoot ourselves in the foot
     -- TODO(arianvp): This makes our impl slightly buggy. But move fast and break things and all that
-    _ -> pure user 
+    _ -> pure user
 applyOperation _ (Operation Replace (Just (IntoValuePath _ _)) _) = do
   throwError (badRequest InvalidPath (Just "can not lens into multi-valued attributes yet"))
 applyOperation user (Operation Replace Nothing (Just value)) = do
   (u :: User tag) <- resultToScimError $ fromJSON value
-  pure $ user 
+  pure $ user
     { userName = userName u
     , displayName = displayName u
     , externalId = externalId u
