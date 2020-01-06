@@ -272,9 +272,7 @@ applyOperation user (Operation Replace (Just (NormalPath (AttrPath _schema attr 
       (\x -> user { displayName = x }) <$> resultToScimError (fromJSON value)
     "externalid" ->
       (\x -> user { externalId = x }) <$> resultToScimError (fromJSON value)
-    -- NOTE: unsupported fields we silently ignore to not shoot ourselves in the foot
-    -- TODO(arianvp): This makes our impl slightly buggy. But move fast and break things and all that
-    _ -> pure user
+    _ -> throwError (badRequest InvalidPath (Just "we only support attributes username, displayname, externalid"))
 applyOperation _ (Operation Replace (Just (IntoValuePath _ _)) _) = do
   throwError (badRequest InvalidPath (Just "can not lens into multi-valued attributes yet"))
 applyOperation user (Operation Replace Nothing (Just value)) = do
