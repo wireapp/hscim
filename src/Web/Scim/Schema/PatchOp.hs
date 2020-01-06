@@ -15,15 +15,15 @@ import Data.Maybe (fromMaybe)
 newtype PatchOp = PatchOp
   { getOperations :: [Operation] }
   deriving (Eq, Show)
-    
+
 -- TODO(arianvp):  When value is an array, it needs special handling.
--- e.g. primary fields need to be negated and whatnot. 
+-- e.g. primary fields need to be negated and whatnot.
 -- We currently do not do that :)
 --
 -- NOTE: When the path contains a schema, this schema must be implicitly added
 -- to the list of schemas on the result type
 data Operation = Operation
-  { op :: Op 
+  { op :: Op
   , path :: Maybe Path
   , value :: Maybe Value
   } deriving (Eq, Show)
@@ -34,13 +34,13 @@ data Operation = Operation
 -- relevant operation sections below for details.
 data Op
   = Add
-  | Replace 
+  | Replace
   | Remove
   deriving (Eq, Show, Enum, Bounded)
 
 -- | PATH = attrPath / valuePath [subAttr]
 data Path
-  = NormalPath AttrPath 
+  = NormalPath AttrPath
   | IntoValuePath ValuePath (Maybe SubAttr)
   deriving (Eq, Show)
 
@@ -50,7 +50,7 @@ parsePath = parseOnly (pPath <* endOfInput) . encodeUtf8
 
 -- | PATH = attrPath / valuePath [subAttr]
 pPath :: Parser Path
-pPath = 
+pPath =
   IntoValuePath <$> pValuePath <*> optional pSubAttr <|>
   NormalPath <$> pAttrPath
 
@@ -73,7 +73,7 @@ instance FromJSON PatchOp where
 instance ToJSON PatchOp where
   toJSON (PatchOp operations) =
     object [ "operations" .=  operations , "schemas" .= [PatchOp20] ]
-      
+
 
 
 
@@ -84,7 +84,7 @@ instance FromJSON Operation where
     Operation <$> (o .: "op") <*> (o .:? "path") <*> (o .:? "value")
 
 instance ToJSON Operation where
-  toJSON (Operation op' path' value') = 
+  toJSON (Operation op' path' value') =
     object $ ("op" .= op') : concat [optionalField "path" path', optionalField "value" value']
     where
       optionalField fname = \case
@@ -104,7 +104,7 @@ instance ToJSON Op where
   toJSON Add = String "add"
   toJSON Replace = String "replace"
   toJSON Remove = String "remove"
-  
+
 
 instance  FromJSON Path where
   parseJSON = withText "Path" $ \v -> case parsePath v of
@@ -113,5 +113,3 @@ instance  FromJSON Path where
 
 instance ToJSON Path where
   toJSON = String . rPath
-    
-
