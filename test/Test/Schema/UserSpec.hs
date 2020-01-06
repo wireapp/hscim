@@ -25,7 +25,7 @@ import           Test.Hspec
 import           Text.Email.Validate (emailAddress)
 import           Network.URI.Static (uri)
 import           HaskellWorks.Hspec.Hedgehog (require)
-import           Hedgehog 
+import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
@@ -36,7 +36,7 @@ prop_roundtrip = property $ do
 
 
 
--- TODO(arianvp): Note that this only tests the top-level fields. 
+-- TODO(arianvp): Note that this only tests the top-level fields.
 -- extrac this to a generic test and also do this for sub-properties
 prop_caseInsensitive :: Property
 prop_caseInsensitive = property $ do
@@ -48,7 +48,7 @@ prop_caseInsensitive = property $ do
   fromJSON (Object user'') === Success user
   fromJSON (Object user''') === Success user
 
-  
+
 spec :: Spec
 spec = do
   describe "JSON serialization" $ do
@@ -90,7 +90,7 @@ genName =
     <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
     <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
     <*> Gen.maybe (Gen.text (Range.constant 0 20) Gen.unicode)
-  
+
 
 genUri :: Gen URI
 genUri = Gen.element [ URI [uri|https://example.com|] ]
