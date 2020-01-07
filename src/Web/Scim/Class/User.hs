@@ -79,8 +79,8 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
 
   -- | Overwrite an existing user.
   --
-  -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if uniqueness
-  -- constraints are violated.
+  -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if
+  -- uniqueness constraints are violated.
   --
   putUser
     :: AuthInfo tag
@@ -90,21 +90,24 @@ class (Monad m, AuthTypes tag, UserTypes tag) => UserDB tag m where
 
   -- | Modify an existing user.
   --
-  -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if uniqueness
-  -- constraints are violated.
-  --   o  If the target location already contains the value specified, no
-  --      changes SHOULD be made to the resource, and a success response
-  --      SHOULD be returned.  Unless other operations change the resource,
-  --      this operation SHALL NOT change the modify timestamp of the
-  --      resource.
+  -- Should throw 'notFound' if the user doesn't exist, and 'conflict' if
+  -- uniqueness constraints are violated.
   --
-  --  Given that PUT has the same constraints, we can implement
-  --  PATCH in terms of some magic in this library, GET and PUT.
+  --  https://tools.ietf.org/html/rfc7644#section-3.5.2
   --
-  --  SCIM's Patch semantics are hard to get right. So we advice using the library
-  --  built-in implementation.
-  --  we implement PATCH in terms of a GET followed by a PUT.  GET will retrieve the entire record;
-  --  we then modify this record by a series of PATCH operations, and then PUT the entire record.
+  --    If the target location already contains the value specified, no changes
+  --    SHOULD be made to the resource, and a success response SHOULD be
+  --    returned.  Unless other operations change the resource, this operation
+  --    SHALL NOT change the modify timestamp of the resource.
+  --
+  --  Given that PUT has the same constraints, we can implement PATCH in terms
+  --  of some magic in this library, GET and PUT.
+  --
+  --  SCIM's Patch semantics are hard to get right. So we advice using the
+  --  library built-in implementation.  we implement PATCH in terms of a GET
+  --  followed by a PUT.  GET will retrieve the entire record; we then modify
+  --  this record by a series of PATCH operations, and then PUT the entire
+  --  record.
   -- 
   patchUser
     :: AuthInfo tag

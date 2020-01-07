@@ -90,14 +90,14 @@ data CompareOp
 -- to compare a username with a boolean), it will be caught during filtering
 -- and an appropriate error message will be thrown (see 'filterUser').
 --
--- TODO(arianvp): Implement the following grammar fully:
+-- TODO(arianvp): Implement the following grammar fully if we want to support
+-- more complex filters
+--
 -- FILTER    = attrExp / logExp / valuePath / *1"not" "(" FILTER ")"
 data Filter
   -- | Compare the attribute value with a literal
   = FilterAttrCompare AttrPath CompareOp CompValue
   deriving (Eq, Show)
-
--- These are all WIP, to support more complex filters; not currently exported
 
 -- | valuePath = attrPath "[" valFilter "]"
 -- TODO(arianvp): This is a slight simplification at the moment as we

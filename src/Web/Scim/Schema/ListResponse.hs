@@ -32,7 +32,7 @@ fromList list = ListResponse
   { schemas = [ListResponse20]
   , totalResults = len
   , itemsPerPage = len
-  , startIndex = 1
+  , startIndex = 1 -- NOTE: lists are 1-indexed in SCIM
   , resources = list
   }
   where
