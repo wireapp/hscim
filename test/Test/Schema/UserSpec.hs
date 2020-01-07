@@ -276,7 +276,7 @@ completeUserJson = [scim|
 
 -- | A 'User' with all attributes empty (if possible).
 minimalUser :: User (TestTag Text () () NoUserExtra)
-minimalUser = (empty [User20] NoUserExtra) { userName = "sample userName" }
+minimalUser = empty [User20] "sample userName" NoUserExtra
 
 -- | Reference encoding of 'minimalUser'.
 minimalUserJson :: Value
@@ -358,8 +358,7 @@ instance ToJSON UserExtraTest where
 -- | A 'User' with extra fields present.
 extendedUser :: UserExtraTest -> User (TestTag Text () () UserExtraTest)
 extendedUser e =
-    (empty [User20, CustomSchema "urn:hscim:test"] e)
-    { userName = "sample userName" }
+    (empty [User20, CustomSchema "urn:hscim:test"] "sample userName" e)
 
 -- | Encoding of @extendedUser UserExtraEmpty@.
 extendedUserEmptyJson :: Value
