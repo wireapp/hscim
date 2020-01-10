@@ -1,8 +1,10 @@
 module Web.Scim.Schema.PatchOp where
 
+--import Data.Proxy
 import Control.Applicative
 import Control.Monad (guard)
 import Control.Monad.Except
+-- import Control.Monad.Reader
 import Web.Scim.Schema.Schema (Schema(PatchOp20))
 import Web.Scim.Schema.UserTypes (UserTypes(supportedSchemas))
 import Data.Aeson.Types (withText, ToJSON(toJSON), object, (.=), FromJSON(parseJSON), withObject, (.:), (.:?), Value(String))
@@ -16,6 +18,8 @@ import Web.Scim.AttrName (AttrName(..))
 import Web.Scim.Filter (AttrPath(..), ValuePath(..), SubAttr(..), pAttrPath, pValuePath, pSubAttr, rAttrPath, rSubAttr, rValuePath)
 import Web.Scim.Schema.Error
 import qualified Data.HashMap.Strict as HM
+-- import GHC.Generics (Generic, selName, C1(..), D1(..), M1(..), K1(..), S1, Selector, (:*:)(..), Rec0)
+-- import Web.Scim.Schema.Common
 
 newtype PatchOp tag = PatchOp
   { getOperations :: [Operation] }
@@ -130,3 +134,40 @@ instance Patchable (HM.HashMap Text Text) where
   applyOperation theMap (Operation _AddOrReplace (Just (NormalPath (AttrPath _schema (AttrName attrName) _subAttr))) (Just (String val))) =
     pure $ HM.insert attrName val theMap
   applyOperation _ _ = throwError $ badRequest InvalidValue $ Just "Unsupported operation"
+
+-----------------------------------------------------------------------
+-- This is hackety-hack that Arian is working on. Ignore it ;)
+
+class GPatchable f where
+  gapplyOperation :: (MonadError ScimError m) => f a -> Operation -> m (f a)
+{-
+-- Type constructor. We do nothing interesting here
+instance GPatchable k => GPatchable (D1 c k)  where
+  gapplyOperation o (M1 x) = M1 <$> gapplyOperation o x
+
+-- Data constructor. We do nothing interesting here
+instance GPatchable k => GPatchable (C1 c k) where
+  gapplyOperation o (M1 x) = M1 <$> gapplyOperation o x
+
+
+-- Record field
+-- All the record fields of a SCIM record need to be SubPatchable
+-- A field containing a value of type 'a'
+{-instance (Semigroup a, Selector c) => GPatchable (S1 c (Rec0 a)) where 
+  gapplyOperation (Operation op path value) sel@(M1 (K1 x)) = do
+    let fieldName = selName sel
+    undefined
+    -}
+
+    -- TODO: guard path == fieldName
+    -- M1 . K1 <$> applyOp op value x
+
+{-
+instance (FromJSON a, Selector c) => GPatchable (S1 c (Rec0 (Immutable a))) where
+    gapplyOperation (Operation op path value) sel@(M1 (K1 x)) = do
+      let fieldName = selName sel
+      M1 . K1 <$> undefined
+
+instance (GPatchable f , GPatchable g) => GPatchable (f :*: g) where
+  gapplyOperation o (x :*: y) = (:*:) <$> gapplyOperation o x <*> gapplyOperation o y
+-}-}

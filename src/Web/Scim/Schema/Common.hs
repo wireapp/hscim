@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module Web.Scim.Schema.Common where
 
@@ -9,6 +11,14 @@ import Data.String (IsString)
 import qualified Network.URI as Network
 import qualified Data.HashMap.Lazy as HML
 
+newtype ReadOnly x = ReadOnly x
+  deriving newtype (ToJSON)
+
+newtype WriteOnly x = WriteOnly (Maybe x)
+  deriving newtype (FromJSON, Functor)
+
+newtype ReadWrite x = ReadWrite (Maybe x)
+  deriving newtype (FromJSON, ToJSON, Functor)
 
 data WithId id a = WithId
   { id :: id
