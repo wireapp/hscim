@@ -20,6 +20,7 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+.stac-work-tmp/
 
 *~
 *.el
