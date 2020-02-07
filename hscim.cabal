@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dacbefe6b2a13bf0be7cc0a32b675c371e2afc853228e2feb0e834c908d9aaf6
+-- hash: 2e1f5560904783ddd425a016aad69c5da97f91b28d18fdf1299736d27af761ad
 
 name:           hscim
 version:        0.3.0
@@ -89,8 +89,7 @@ library
     , microlens >=0.4.10 && <0.5
     , mmorph >=1.1.3 && <1.2
     , mtl >=2.2.2 && <2.3
-    , network-uri >=2.6.1 && <2.7
-    , network-uri-static >=0.1.2 && <0.2
+    , network-uri >=2.6.2 && <2.7
     , scientific >=0.3.6 && <0.4
     , servant >=0.16.2 && <0.17
     , servant-server >=0.16.2 && <0.17
@@ -138,8 +137,7 @@ executable hscim-server
     , microlens >=0.4.10 && <0.5
     , mmorph >=1.1.3 && <1.2
     , mtl >=2.2.2 && <2.3
-    , network-uri >=2.6.1 && <2.7
-    , network-uri-static >=0.1.2 && <0.2
+    , network-uri >=2.6.2 && <2.7
     , scientific >=0.3.6 && <0.4
     , servant >=0.16.2 && <0.17
     , servant-server >=0.16.2 && <0.17
@@ -198,8 +196,7 @@ test-suite spec
     , microlens >=0.4.10 && <0.5
     , mmorph >=1.1.3 && <1.2
     , mtl >=2.2.2 && <2.3
-    , network-uri >=2.6.1 && <2.7
-    , network-uri-static >=0.1.2 && <0.2
+    , network-uri >=2.6.2 && <2.7
     , scientific >=0.3.6 && <0.4
     , servant >=0.16.2 && <0.17
     , servant-server >=0.16.2 && <0.17
