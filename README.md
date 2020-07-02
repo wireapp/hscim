@@ -1,3 +1,17 @@
+.
+
+.
+
+.
+
+# This repo has been merged into [wireapp/wire-server](https://github.com/wireapp/wire-server/tree/develop/libs/hscim)
+
+.
+
+.
+
+.
+
 # System for Cross-domain Identity Management (SCIM)
 
 This implements part of the [SCIM standard](http://www.simplecloud.info)
